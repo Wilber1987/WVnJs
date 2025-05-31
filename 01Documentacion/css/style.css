@@ -1,0 +1,184 @@
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+p {
+  margin: 15px 0;
+}
+ul {
+  margin: 15px 0;
+  margin-left: 40px;
+}
+
+body {
+  font-family: sans-serif;
+  background-color: #111;
+  color: #eee;
+  line-height: 1.6;
+}
+
+.container {
+  width: 100%;
+  max-width: 1200px;
+  margin: auto;
+  padding: 20px;
+    margin-left: 250px;
+}
+
+header {
+  background: #222;
+  padding: 40px 0;
+  text-align: center;
+  border-bottom: 1px solid #333;
+}
+
+main {
+  padding: 40px 0;
+}
+
+section {
+  margin-bottom: 40px;
+}
+
+h2 {
+  margin-bottom: 10px;
+  color: #00eaff;
+}
+
+pre {
+  background: #222;
+  padding: 10px;
+  overflow-x: auto;
+  border-radius: 5px;
+}
+
+.sidebar {
+  position: sticky;
+  top: 0;
+  height: 100vh;
+  width: 200px;
+  float: left;
+  padding: 20px;
+  background: #1a1a1a;
+}
+
+.sidebar ul {
+  list-style: none;
+}
+
+.sidebar li {
+  margin: 10px 0;
+}
+
+.sidebar a {
+  color: #aaa;
+  text-decoration: none;
+  display: block;
+}
+
+.sidebar a:hover {
+  color: white;
+}
+
+footer {
+  background: #1a1a1a;
+  text-align: center;
+  padding: 20px;
+  font-size: 0.9em;
+  color: #999;
+}
+
+.module-section {
+  margin-bottom: 40px;
+}
+
+.module-section h3 {
+  color: #00eaff;
+  border-left: 4px solid #00eaff;
+  padding-left: 10px;
+}
+
+.module-section h4 {
+  color: #ffdd57;
+}
+
+.module-section ul {
+  margin: 10px 0;
+  padding-left: 20px;
+}
+
+.module-section pre {
+  background-color: #222;
+  padding: 10px;
+  overflow-x: auto;
+  color: #fff;
+  font-size: 14px;
+  margin-top: 10px;
+}
+
+.guide-step {
+  margin-bottom: 40px;
+}
+
+h3 {
+  color: #00eaff;
+  border-left: 4px solid #00eaff;
+  padding-left: 10px;
+}
+
+.guide-step pre {
+  background-color: #222;
+  color: #fff;
+  padding: 10px;
+  overflow-x: auto;
+  font-size: 14px;
+  border-radius: 5px;
+}
+
+.guide-step ul li strong {
+  color: #ffdd57;
+}
+
+.guide-step {
+  margin-bottom: 40px;
+}
+
+.guide-step h3 {
+  color: #00eaff;
+  border-left: 4px solid #00eaff;
+  padding-left: 10px;
+}
+
+.guide-step pre {
+  background-color: #222;
+  color: #fff;
+  padding: 10px;
+  overflow-x: auto;
+  font-size: 14px;
+  border-radius: 5px;
+}
+.options {
+  display: flex;
+  gap: 20px;
+  justify-content: center;
+}
+
+a {
+  color: #006fd6;
+}
+.options a {
+  padding: 10px;
+  color: #fff;
+  background-color: #006fd6;
+  border-radius: 10px;
+  font-size: 18px;
+  text-decoration: none;
+  width: 150px;
+  transition: all 0.5s;
+}
+
+.options a:hover {
+  background-color: #003e77;
+}

@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <title>Visual Novel JS</title>
+  <link rel="stylesheet" href="./core/app.css">
+
+</head>
+
+<body>
+  <div id="game-container">
+    <div id="background"></div>
+    <div id="character-sprites"></div>
+    <div id="text-container">
+      <div id="name-box"></div>
+      <div id="text-box"></div>
+    </div>
+    <div id="choices-container"></div>
+    <div id="choices-container-fullscreen"></div>
+    <div id="choices-container-menu"></div>
+    <div id="save-load-screen" class="save-load-screen">
+      <div class="save-load-grid" id="save-load-grid"></div>
+    </div>
+    <div id="game-time-display" style="
+        position: absolute;
+        top: 10px;
+        left: 10px;
+        color: white;
+        background: rgba(0, 0, 0, 0.5);
+        padding: 10px;
+        border-radius: 5px;
+        font-size: 14px;
+        z-index: 1000;
+      ">
+    </div>
+
+  </div>
+  <script src="app.js" type="module"></script>
+</body>
+
+</html>

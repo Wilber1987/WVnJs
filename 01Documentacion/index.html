@@ -1,0 +1,1049 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Documentación - WVn.Js</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="css/style.css">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css" rel="stylesheet" />
+</head>
+
+<body>
+    <header>
+        <div class="">
+            <h1 style="font-size: 80px; font-family: sans-serif"><span
+                    style="color: #0fa5fc;font-size: 110px;">W</span><span
+                    style="color: #dce1e4;font-style: italic;">Vn.js</span></h1>
+            <p>Un motor de juegos visual hecho en JavaScript, web-first.</p>
+        </div>
+    </header>
+
+    <nav class="sidebar">
+        <ul>
+            <h3>Inicio</h3>
+            <li><a href="#introduccion">Introducción</a></li>
+            <li><a href="#escenas">Escenas</a></li>
+            <li><a href="#dialogos">Diálogos</a></li>
+            <li><a href="#opciones">Opciones y Menús</a></li>
+            <li><a href="#guardado">Sistema de Guardado</a></li>
+            <li><a href="#tiempo">Sistema de Tiempo</a></li>
+            <li><a href="#personajes">Personajes</a></li>
+            <li><a href="#api">Referencia API</a></li>
+            <h3>Guía</h3>
+            <li><a href="#api-modules">Módulos</a></li>
+            <li><a href="#getting-started">Guía de inicio</a></li>
+            <li><a href="#guia-mapa">Mapas</a></li>
+            <li><a href="#creating-characters">Personajes</a></li>
+        </ul>
+    </nav>
+
+    <main class="container">
+        <section id="introduccion">
+            <h2>Introducción</h2>
+            <p>Este motor permite crear novelas visuales en el navegador usando solo HTML, CSS y JavaScript. Es modular,
+                extensible y está diseñado para soportar múltiples tipos de escena, menús flotantes, sistema de tiempo y
+                guardado local.</p>
+        </section>
+
+        <section id="escenas">
+            <h2>Escenas</h2>
+            <p>Las escenas se definen con fondos (imágenes o videos) y pueden tener efectos de transición:</p>
+            <pre><code class="language-javascript">
+// Mostrar una escena
+Scene.Show("home_day", "house_ambience", true);
+      </code></pre>
+            <ul>
+                <li>`image`: ruta a imagen o video</li>
+                <li>`audio`: música o ambiente sonoro</li>
+                <li>`isAffectedByTime`: si cambia según la hora del día</li>
+            </ul>
+        </section>
+
+        <section id="dialogos">
+            <h2>Diálogos</h2>
+            <p>Muestra diálogos con nombre, texto y opcionalmente audio:</p>
+            <pre><code class="language-javascript">
+Dialogue.Say("Laura", "Hola, ¿cómo estás?", "./Audio/dialogue_laura.mp3");
+      </code></pre>
+            <p>El diálogo espera automáticamente a que termine el audio o el usuario haga click.</p>
+        </section>
+
+        <section id="opciones">
+            <h2>Opciones y Menús</h2>
+            <p>Crea opciones interactivas con iconos y condiciones:</p>
+            <pre><code class="language-javascript">
+Flow.Choice([
+  Flow.Action("Ir a Cocina", [Scene.Show("kitchen")], { icon: "Icons/./Media/icon/kitchen.png", typeMenu: "TAB" }),
+  Flow.Action("Guardar Partida", [SaveSystem.instance.showSaveLoadScreen(false)], { typeMenu: "FLOATING" })
+]);
+      </code></pre>
+            <ul>
+                <li>`typeMenu: "TAB"` → Menú cuadriculado</li>
+                <li>`typeMenu: "MENU"` → Menú lateral</li>
+                <li>`typeMenu: "FLOATING"` → No bloquea flujo</li>
+            </ul>
+        </section>
+
+        <section id="guardado">
+            <h2>Sistema de Guardado</h2>
+            <p>Guarda el estado completo del juego:</p>
+            <pre><code class="language-javascript">
+SaveSystem.instance.saveToSlot("slot1");
+SaveSystem.instance.loadFromSlot("slot1");
+      </code></pre>
+            <p>También muestra una pantalla de guardado/carga con slots gráficos:</p>
+            <pre><code class="language-javascript">
+SaveSystem.instance.showSaveLoadScreen(true); // Cargar
+SaveSystem.instance.showSaveLoadScreen(false); // Guardar
+      </code></pre>
+        </section>
+
+        <section id="tiempo">
+            <h2>Sistema de Tiempo</h2>
+            <p>Controla la hora, día y temporada:</p>
+            <pre><code class="language-javascript">
+timeSystem.advanceTime(3); // Avanza 3 horas
+console.log(timeSystem.getFormattedHour()); // Muestra la hora actual
+      </code></pre>
+            <p>Puedes usarlo en condiciones:</p>
+            <pre><code class="language-javascript">
+if (time.hour >= 6 && time.hour < 12) {
+  Scene.Show("plaza_morning");
+}
+      </code></pre>
+        </section>
+
+        <section id="personajes">
+            <h2>Personajes</h2>
+            <p>Muestra personajes con posición y transparencia (WebM):</p>
+            <pre><code class="language-javascript">
+Character.Show("Laura", "laura_happy", "right");
+Character.Hide("Laura");
+      </code></pre>
+            <p>Soporta imágenes o videos con canal alfa.</p>
+        </section>
+
+        <section id="api">
+            <h2>Referencia API</h2>
+            <h3>Clases principales</h3>
+            <ul>
+                <li><strong>VisualNovelEngine</strong>: El motor principal</li>
+                <li><strong>Scene</strong>: Para mostrar escenas</li>
+                <li><strong>Dialogue</strong>: Para mostrar diálogos</li>
+                <li><strong>Character</strong>: Para mostrar personajes</li>
+                <li><strong>Flow</strong>: Comandos lógicos (`If`, `Jump`, `Set`, etc.)</li>
+                <li><strong>SaveSystem</strong>: Guardado local</li>
+                <li><strong>TimeSystem</strong>: Manejo del tiempo</li>
+            </ul>
+            <h3>Ejemplo de uso</h3>
+            <pre><code class="language-javascript">
+vnEngine.defineScene('Home', [
+  Scene.Show("home_day"),
+  Dialogue.Say("Narrador", "Has llegado a casa. ¿A dónde deseas ir?"),
+  Flow.Choice([
+    Flow.Action("Dormitorio", [Flow.Jump("Bedroom")]),
+    Flow.Action("Cocina", [Flow.Jump("Kitchen")])
+  ])
+]);
+      </code></pre>
+        </section>
+        <section id="api-modules">
+            <h2>Referencia de Módulos</h2>
+            <p>Este motor está construido sobre un sistema modular. Cada clase tiene un propósito específico:</p>
+
+            <!-- Scene Module -->
+            <div class="module-section">
+                <h3>Módulo: Scene</h3>
+                <p>Gestiona la carga de escenas con imágenes o videos, opcionalmente con audio ambiental.</p>
+
+                <h4>Scene.Show(url, audio, loopAudio = true, isAffectedByTime = false)</h4>
+                <ul>
+                    <li><strong>@param {string} url</strong> - Ruta relativa a imagen (sin extensión)</li>
+                    <li><strong>@param {string|undefined} [audio]</strong> - Nombre del ambiente sonoro</li>
+                    <li><strong>@param {boolean} [loopAudio=true]</strong> - Si el audio debe repetirse</li>
+                    <li><strong>@param {boolean} [isAffectedByTime=false]</strong> - Fondo cambia según la hora del día
+                    </li>
+                    <li><strong>@returns {Object}</strong> - Comando de tipo "scene"</li>
+                </ul>
+                <pre><code class="language-javascript">// Mostrar escena con fondo y música ambiental
+Scene.Show("home_day", "house_ambience", true, true);</code></pre>
+            </div>
+
+            <div class="module-section">
+                <h3>Scene.ShowV(url, audio, loopScene = true, loopAudio = true)</h3>
+                <p>Muestra una escena con video como fondo, opcionalmente con audio asociado.</p>
+
+                <ul>
+                    <li><strong>@param {string} url</strong> - Ruta relativa al video (sin extensión)</li>
+                    <li><strong>@param {string|undefined} [audio]</strong> - Sonido de fondo</li>
+                    <li><strong>@param {boolean} [loopScene=true]</strong> - El video se repite</li>
+                    <li><strong>@param {boolean} [loopAudio=true]</strong> - El audio también se repite</li>
+                    <li><strong>@returns {Object}</strong> - Comando de tipo "scene" con video</li>
+                </ul>
+                <pre><code class="language-javascript">// Reproducir intro con video y música
+Scene.ShowV("intro_video", "intro_music");</code></pre>
+            </div>
+
+            <!-- Character Module -->
+            <div class="module-section">
+                <h3>Módulo: Character</h3>
+                <p>Clase para mostrar personajes estáticos o animados (WebM) en pantalla.</p>
+
+                <h4>Character.Show(who, image, position = "center")</h4>
+                <ul>
+                    <li><strong>@param {string} who</strong> - Nombre del personaje</li>
+                    <li><strong>@param {string} image</strong> - Ruta base del personaje</li>
+                    <li><strong>@param {string} [position='center']</strong> - Posición: left, right, center</li>
+                    <li><strong>@returns {Object}</strong> - Comando de tipo "show"</li>
+                </ul>
+                <pre><code class="language-javascript">// Mostrar personaje en posición derecha
+Character.Show("Laura", "laura_happy", "right");</code></pre>
+            </div>
+
+            <div class="module-section">
+                <h4>Character.ShowR(who, image)</h4>
+                <p>Versión abreviada de `Show(...)` con posición fija a la derecha.</p>
+                <pre><code class="language-javascript">Character.ShowR("Laura", "happy");</code></pre>
+            </div>
+
+            <div class="module-section">
+                <h4>Character.ShowL(who, image)</h4>
+                <p>Versión abreviada de `Show(...)` con posición fija a la izquierda.</p>
+                <pre><code class="language-javascript">Character.ShowL("Laura", "angry");</code></pre>
+            </div>
+
+            <div class="module-section">
+                <h4>Character.Hide(who)</h4>
+                <p>Oculta un personaje con transición suave.</p>
+                <pre><code class="language-javascript">Character.Hide("Laura");</code></pre>
+            </div>
+
+            <!-- Dialogue Module -->
+            <div class="module-section">
+                <h3>Módulo: Dialogue</h3>
+                <p>Muestra diálogos con soporte para audio y narraciones.</p>
+
+                <h4>Dialogue.Say(name, text, audio)</h4>
+                <ul>
+                    <li><strong>@param {string} name</strong> - Nombre del hablante</li>
+                    <li><strong>@param {string} text</strong> - Texto a mostrar</li>
+                    <li><strong>@param {string|undefined} [audio]</strong> - Archivo de audio asociado</li>
+                    <li><strong>@returns {Object}</strong> - Comando de tipo "say"</li>
+                </ul>
+                <pre><code class="language-javascript">// Diálogo con audio
+Dialogue.Say("Laura", "Hola, ¿cómo estás?", "dialogue_laura.mp3");</code></pre>
+            </div>
+
+            <div class="module-section">
+                <h4>Dialogue.Narrate(text, audio)</h4>
+                <p>Narración sin nombre de hablante. Útil para descripciones ambientales.</p>
+                <pre><code class="language-javascript">Dialogue.Narrate("La luz parpadea... algo va mal.");</code></pre>
+            </div>
+
+            <!-- Flow Module -->
+            <div class="module-section">
+                <h3>Módulo: Flow</h3>
+                <p>Lógica del juego: saltos, condiciones, guardado, menús...</p>
+
+                <h4>Flow.Jump(target)</h4>
+                <ul>
+                    <li><strong>@param {string} target</strong> - Escena destino</li>
+                    <li><strong>@returns {Object}</strong> - Comando de tipo "jump"</li>
+                </ul>
+                <pre><code class="language-javascript">Flow.Jump("MainMenu");</code></pre>
+            </div>
+
+            <div class="module-section">
+                <h4>Flow.Action(text, action, config)</h4>
+                <ul>
+                    <li><strong>@param {string} text</strong> - Texto del botón</li>
+                    <li><strong>@param {Array} action</strong> - Acciones a ejecutar</li>
+                    <li><strong>@param {{ icon: string, typeMenu?: string, position?: { xpos: number, ypos: number} }}
+                            [config]</strong> - Configuración visual</li>
+                    <li><strong>@returns {Object}</strong> - Opción de menú</li>
+                </ul>
+                <pre><code class="language-javascript">Flow.Action("Ir a Cocina", [Scene.Show("kitchen.jpg")], {
+  icon: "Icons/./Media/icon/kitchen.png",
+  typeMenu: "TAB"
+});</code></pre>
+            </div>
+
+            <div class="module-section">
+                <h4>Flow.Choice(options)</h4>
+                <ul>
+                    <li><strong>@param {Array} options</strong> - Lista de objetos Flow.Action</li>
+                    <li><strong>@returns {Object}</strong> - Comando de tipo "choice"</li>
+                </ul>
+                <pre><code class="language-javascript">Flow.Choice([
+  Flow.Action("Dormitorio", [Flow.Jump("Bedroom")]),
+  Flow.Action("Cocina", [Flow.Jump("Kitchen")])
+]);</code></pre>
+            </div>
+
+            <div class="module-section">
+                <h4>Flow.If(condition, thenBlock, elseBlock)</h4>
+                <ul>
+                    <li><strong>@param {Object} condition</strong> - Condición lógica</li>
+                    <li><strong>@param {Array} thenBlock</strong> - Acciones si es verdadero</li>
+                    <li><strong>@param {Array} elseBlock</strong> - Acciones si es falso</li>
+                </ul>
+                <pre><code class="language-javascript">Flow.If(Flow.Var("danaFriendshipLevel", ">=", 2), [
+  Dialogue.Say("Dana", "¿Quieres jugar?")
+]);</code></pre>
+            </div>
+
+            <div class="module-section">
+                <h4>Flow.Set(variable, value)</h4>
+                <ul>
+                    <li><strong>@param {string} variable</strong> - Nombre de la variable</li>
+                    <li><strong>@param {*} value</strong> - Valor a asignar</li>
+                </ul>
+                <pre><code class="language-javascript">Flow.Set("energy", 50);</code></pre>
+            </div>
+
+            <div class="module-section">
+                <h4>Flow.Wait(duration)</h4>
+                <ul>
+                    <li><strong>@param {number} duration</strong> - Tiempo en ms</li>
+                </ul>
+                <pre><code class="language-javascript">Flow.Wait(2000); // Espera 2 segundos</code></pre>
+            </div>
+
+            <div class="module-section">
+                <h4>Flow.Menu(options, config = {})</h4>
+                <ul>
+                    <li><strong>@param {Array} options</strong> - Lista de acciones</li>
+                    <li><strong>@param {{typeMenu: string}} [config]</strong> - Tipo de menú</li>
+                    <li><strong>@returns {Object}</strong> - Comando de tipo "choice"</li>
+                </ul>
+                <pre><code class="language-javascript">Flow.Menu([
+  Flow.Action("Guardar", [() => saveSystem.showSaveLoadScreen(false)]),
+  Flow.Action("Cargar", [() => saveSystem.showSaveLoadScreen(true)])
+], { typeMenu: "FLOATING" });</code></pre>
+            </div>
+
+            <div class="module-section">
+                <h4>Flow.Time(hourOperator, hourValue)</h4>
+                <ul>
+                    <li><strong>@param {string} hourOperator</strong> - Operador: '==', '>', '<'< /li>
+                    <li><strong>@param {number} hourValue</strong> - Hora del día</li>
+                </ul>
+                <pre><code class="language-javascript">Flow.Time(">", 20); // Si la hora > 20</code></pre>
+            </div>
+
+            <div class="module-section">
+                <h4>Condiciones lógicas</h4>
+                <ul>
+                    <li><strong>Flow.Var(name, operator, value)</strong> - Evalúa variables</li>
+                    <li><strong>Flow.And(...conditions)</strong> - Condición lógica AND</li>
+                    <li><strong>Flow.Or(...conditions)</strong> - Condición lógica OR</li>
+                    <li><strong>Flow.Not(condition)</strong> - Negación lógica</li>
+                </ul>
+                <pre><code class="language-javascript">Flow.If(Flow.And(
+  Flow.Var("day", "==", 1),
+  Flow.Time("<", 12)
+), [...])</code></pre>
+            </div>
+
+            <!-- MapScene Module -->
+            <div class="module-section">
+                <h3>Módulo: MapScene</h3>
+                <p>Sistema simplificado para crear mapas con menú automático.</p>
+
+                <h4>MapScene.Go(MapName, Options, OptionalsMenus = [], audio, isAffectedByTime)</h4>
+                <ul>
+                    <li><strong>@param {string} MapName</strong> - Nombre del mapa</li>
+                    <li><strong>@param {Array} Options</strong> - Acciones principales</li>
+                    <li><strong>@param {Array} [OptionalsMenus=[]]</strong> - Menús adicionales</li>
+                    <li><strong>@param {string|undefined} [audio]</strong> - Ambiente sonoro</li>
+                    <li><strong>@param {boolean} [isAffectedByTime=false]</strong> - Cambia por hora</li>
+                    <li><strong>@returns {Array}</strong> - Bloque listo para definir</li>
+                </ul>
+                <pre><code class="language-javascript">MapScene.Go("plaza", [
+  Flow.Action("Tienda", [Flow.Jump("Shop")]),
+  Flow.Action("Cafetería", [Flow.Jump("Cafe")])
+], [], "plaza_ambience", true)</code></pre>
+            </div>
+
+            <!-- RoomScene Module -->
+            <div class="module-section">
+                <h3>Módulo: RoomScene</h3>
+                <p>Para navegación dentro de una casa u otros espacios internos.</p>
+
+                <h4>RoomScene.Go(RoomName, Commands, Options, audio, isAffectedByTime)</h4>
+                <ul>
+                    <li><strong>@param {string} RoomName</strong> - Nombre de la habitación</li>
+                    <li><strong>@param {Array} Commands</strong> - Acciones iniciales</li>
+                    <li><strong>@param {Array} Options</strong> - Opciones del menú</li>
+                    <li><strong>@param {string|undefined} [audio]</strong> - Ambiente sonoro</li>
+                    <li><strong>@param {boolean} [isAffectedByTime=false]</strong> - Fondo dinámico por hora</li>
+                    <li><strong>@returns {Array}</strong> - Bloque completo de escena</li>
+                </ul>
+                <pre><code class="language-javascript">RoomScene.Go("bedroom", [
+  Dialogue.Say("Narrador", "Estoy en mi dormitorio..."),
+  Flow.Action("Explorar", [Flow.Jump("Closet")])
+], [
+  Flow.Action("Sala", [Flow.Jump("LivingRoom")])
+], "bedroom_ambience", true)</code></pre>
+            </div>
+
+            <!-- CharacterModel Module -->
+            <div class="module-section">
+                <h3>Módulo: CharacterModel</h3>
+                <p>Clase base para definir personajes reutilizables.</p>
+
+                <h4>new CharacterModel()</h4>
+                <ul>
+                    <li><strong>@property {string} Name</strong> - Nombre del personaje</li>
+                    <li><strong>@property {Object} State</strong> - Estados/animaciones</li>
+                </ul>
+                <pre><code class="language-javascript">const Dana = new CharacterModel();
+Dana.Name = "Dana";
+Dana.State.Normal = "dana_default";
+Dana.State.Happy = "dana_smile";</code></pre>
+            </div>
+
+            <div class="module-section">
+                <h4>character.Show(state = "Normal", position = "center")</h4>
+                <ul>
+                    <li><strong>@param {string} [state="Normal"]</strong> - Estado del personaje</li>
+                    <li><strong>@param {string} [position="center"]</strong> - Lugar en pantalla</li>
+                    <li><strong>@returns {Object}</strong> - Comando de tipo "show"</li>
+                </ul>
+                <pre><code class="language-javascript">Dana.Show("Happy", "right");</code></pre>
+            </div>
+
+            <div class="module-section">
+                <h4>character.ShowR(state)</h4>
+                <p>Versión abreviada de `Show(...)` con posición fija a la derecha.</p>
+                <pre><code class="language-javascript">Dana.ShowR("Angry");</code></pre>
+            </div>
+
+            <div class="module-section">
+                <h4>character.ShowL(state)</h4>
+                <p>Versión abreviada de `Show(...)` con posición fija a la izquierda.</p>
+                <pre><code class="language-javascript">Dana.ShowL("Smile");</code></pre>
+            </div>
+
+            <div class="module-section">
+                <h4>character.Say(text)</h4>
+                <p>Devuelve un diálogo con el nombre del personaje como emisor.</p>
+                <pre><code class="language-javascript">Dana.Say("No me interrumpas.");</code></pre>
+            </div>
+
+            <div class="module-section">
+                <h4>character.GetVar(name)</h4>
+                <p>Obtiene el valor actual de una variable del juego.</p>
+                <pre><code class="language-javascript">if (Dana.GetVar("dana_sleeping")) {
+  return Dialogue.Say("Tú", "Está durmiendo...");
+}</code></pre>
+            </div>
+
+            <div class="module-section">
+                <h4>character.Hide()</h4>
+                <p>Oculta al personaje con transición suave.</p>
+                <pre><code class="language-javascript">Dana.Hide();</code></pre>
+            </div>
+
+            <!-- SaveSystem Module -->
+            <div class="module-section">
+                <h3>Módulo: SaveSystem</h3>
+                <p>Sistema de guardado local usando localStorage.</p>
+
+                <h4>saveSystem.saveToSlot(slot)</h4>
+                <ul>
+                    <li><strong>@param {string} slot</strong> - Nombre del slot de guardado</li>
+                </ul>
+                <pre><code class="language-javascript">saveSystem.saveToSlot("slot1");</code></pre>
+            </div>
+
+            <div class="module-section">
+                <h4>saveSystem.loadFromSlot(slot)</h4>
+                <ul>
+                    <li><strong>@param {string} slot</strong> - Slot de partida guardada</li>
+                </ul>
+                <pre><code class="language-javascript">saveSystem.loadFromSlot("slot1");</code></pre>
+            </div>
+
+            <div class="module-section">
+                <h4>saveSystem.showSaveLoadScreen(isLoadMode = true)</h4>
+                <ul>
+                    <li><strong>@param {boolean} [isLoadMode=true]</strong> - true para cargar, false para guardar</li>
+                </ul>
+                <pre><code class="language-javascript">saveSystem.showSaveLoadScreen(true); // Mostrar pantalla de carga</code></pre>
+            </div>
+
+            <!-- TimeSystem Module -->
+            <div class="module-section">
+                <h3>Módulo: TimeSystem</h3>
+                <p>Sistema de tiempo del día, semana y temporada.</p>
+
+                <h4>this.TimeSystem.advanceTime(hoursToAdd = 1)</h4>
+                <ul>
+                    <li><strong>@param {number} hoursToAdd</strong> - Horas a sumar</li>
+                </ul>
+                <pre><code class="language-javascript">this.TimeSystem.advanceTime(3); // Avanzar 3 horas</code></pre>
+            </div>
+
+            <div class="module-section">
+                <h4>this.TimeSystem.getTimeSuffix()</h4>
+                <p>Devuelve `_morning`, `_afternoon`, `_sunset`, `_night` según la hora actual.</p>
+                <pre><code class="language-javascript">const suffix = this.TimeSystem.getTimeSuffix();</code></pre>
+            </div>
+
+            <!-- Example Full Game Block -->
+            <div class="module-section">
+                <h3>Ejemplo Completo de Uso</h3>
+                <p>Definición de una escena con personaje, condición y menú:</p>
+                <pre><code class="language-javascript">vnEngine.defineScene('Bedroom', [
+  Scene.Show("bedroom_day", "bedroom_ambience", true, true),
+  Dialogue.Say("Tú", "¿Dana está despierta ya?"),
+  Flow.If(Flow.Var("dana_sleeping", "!=", true), [
+    Flow.Action("Despertarla", [
+      Flow.Set("dana_sleeping", false),
+      Dialogue.Say("Dana", "¿Qué quieres?")
+    ])
+  ], [
+    Flow.Action("Dejarla dormir", [
+      Dialogue.Say("Tú", "Mejor la dejo descansar...")
+    ])
+  ]),
+  Flow.Action("Mirar por la ventana", [
+    Dialogue.Say("Tú", "Ya está oscuro afuera..."),
+    Flow.Refresh()
+  ])
+]);</code></pre>
+            </div>
+        </section>
+
+        <section id="getting-started">
+            <h2>Guía de Inicio Rápido</h2>
+            <p>Esta guía te ayudará a configurar y usar el motor de novelas visuales paso a paso.</p>
+
+            <!-- Paso 1: Descargar el repositorio -->
+            <div class="guide-step">
+                <h3>1. Descargar el Repositorio</h3>
+                <p>Primero, necesitas obtener una copia del código fuente del motor. Puedes hacerlo clonando el
+                    repositorio desde GitHub o descargándolo como un archivo ZIP.</p>
+                <ul>
+                    <li><strong>Clonar desde GitHub:</strong></li>
+                    <pre><code class="language-javascript">git clone https://github.com/Wilber1987/WVnJs.git</code></pre>
+                    <li><strong>O descargar como ZIP:</strong></li>
+                    <p>Haz clic en "Code" → "Download ZIP" en la página del repositorio.</p>
+                </ul>
+            </div>
+
+            <!-- Paso 2: Estructura del Proyecto -->
+            <div class="guide-step">
+                <h3>2. Estructura del Proyecto</h3>
+                <p>Después de descargar el repositorio, revisa la estructura básica de carpetas y archivos:</p>
+                <ul>
+                    <li><strong>Core/</strong>: Contiene los módulos principales del motor.</li>
+                    <li><strong>Characters/</strong>: Almacena imágenes o animaciones de personajes.</li>
+                    <li><strong>History/</strong>: Guarda historias definidas (escenas, diálogos).</li>
+                    <li><strong>Maps/</strong>: Mapas dinámicos o mundos abiertos.</li>
+                    <li><strong>Media/</strong>: Recursos multimedia (imágenes, videos, audio).</li>
+                    <li><strong>app.html</strong>: Archivo HTML principal.</li>
+                    <li><strong>app.js</strong>: Código JavaScript de inicio.</li>
+                </ul>
+                <p>Por ejemplo, aquí está la estructura típica:</p>
+                <pre><code class="language-javascript">
+.
+├── Core/
+│   ├── app.css
+│   ├── core.js
+│   ├── MainMenu.js
+│   ├── SaveSystem.js
+│   ├── TimeSystem.js
+│   └── VisualNovelEngine.js
+├── Characters/
+├── History/
+├── Maps/
+├── Media/
+├── app.html
+└── app.js
+    </code></pre>
+            </div>
+
+            <!-- Paso 3: Configuración Inicial -->
+            <div class="guide-step">
+                <h3>3. Configuración Inicial</h3>
+                <p>Por defecto el indexhtml tendra los elementos necesarios para arrancar el motor, si es modificado
+                    asegúrate de cargar los archivos necesarios en tu archivo HTML principal (`app.html`):</p>
+                </pre>
+            </div>
+
+            <!-- Paso 4: Crear tu primera escena -->
+            <div class="guide-step">
+                <h3>4. Crear tu primera escena</h3>
+                <p>En `app.js`, inicia el motor y define una escena simple:</p>
+                <pre><code class="language-javascript">// Importar el motor
+const vnEngine = new VisualNovelEngine();
+
+// Definir una escena
+vnEngine.defineScene('Home', [
+  Scene.Show("home_day", "house_ambience"),
+  Dialogue.Say("Narrador", "Has llegado a casa. ¿A dónde deseas ir?"),
+  Flow.Choice([
+    Flow.Action("Ir a Cocina", [Flow.Jump("Kitchen")], { icon: "Icons/icon_kitchen.png" }),
+    Flow.Action("Dormitorio", [Flow.Jump("Bedroom")], { icon: "Icons/icon_bedroom.png" })
+  ])
+]);
+
+// Iniciar la escena
+vnEngine.startScene('Home');</code></pre>
+            </div>
+
+            <!-- Paso 5: Personalizar el Motor -->
+            <div class="guide-step">
+                <h3>5. Personalizar el Motor</h3>
+                <p>Puedes personalizar fácilmente el motor añadiendo tus propias escenas, diálogos y opciones. Por
+                    ejemplo:</p>
+                <pre><code class="language-javascript">vnEngine.defineScene('Kitchen', [
+  Scene.Show("kitchen_day", "kitchen_ambience"),
+  Dialogue.Say("Narrador", "Estás en la cocina..."),
+  Flow.Choice([
+    Flow.Action("Ir a Sala", [Flow.Jump("LivingRoom")]),
+    Flow.Action("Volver", [Flow.Jump("Home")])
+  ])
+]);</code></pre>
+            </div>
+
+            <!-- Paso 6: Ejemplo Completo -->
+            <div class="guide-step">
+                <h3>6. Ejemplo Completo</h3>
+                <p>Aquí tienes un ejemplo completo de una escena con menús flotantes, tablas y opciones posicionadas
+                    manualmente:</p>
+                <pre><code class="language-javascript">vnEngine.defineScene('Bedroom', [
+  Scene.Show("bedroom_day", "bedroom_ambience", true, true),
+  Dialogue.Say("Tú", "Estoy en mi dormitorio..."),
+  Flow.Choice([
+    Flow.Action("Ir a Cocina", [Flow.Jump("Kitchen")], { typeMenu: "TAB" }),
+    Flow.Action("Mirar por la ventana", [Dialogue.Say("Tú", "Ya está oscuro afuera..."), Flow.Refresh()])
+  ]),
+  Flow.Action("Seguir", [Flow.Jump("LivingRoom")], { typeMenu: "FLOATING" }),
+  Flow.Action("Posicionado", [Flow.Jump("Backyard")], { xpos: 70, ypos: 30 })
+]);</code></pre>
+            </div>
+
+            <!-- Paso 7: Próximos Pasos -->
+            <div class="guide-step">
+                <h3>7. Próximos Pasos</h3>
+                <p>Una vez que tengas todo configurado, puedes explorar más funciones avanzadas:</p>
+                <ul>
+                    <li><strong>Gestión de tiempo:</strong> Usa `TimeSystem` para cambiar fondos según la hora del día.
+                    </li>
+                    <li><strong>Guardado/restauración:</strong> Implementa `SaveSystem` para guardar partidas.</li>
+                    <li><strong>Personajes animados:</strong> Carga WebM con transparencia usando `Character.Show(...)`.
+                    </li>
+                </ul>
+            </div>
+        </section>
+        <section id="guia-mapa">
+            <h2>Guía: Crear una escena inicial con mapa interactivo</h2>
+            <p>Con este motor puedes crear mapas interactivos donde el jugador puede hacer click en diferentes zonas
+                para avanzar en la historia.</p>
+
+            <!-- Paso 1: Archivo app.js -->
+            <div class="guide-step">
+                <h3>1. Inicio del juego – `app.js`</h3>
+                <p>En el archivo principal `app.js`, defines la escena inicial y el menú de opciones:</p>
+                <pre><code class="language-javascript">// app.js
+import { saveSystem, vnEngine } from "./Core/VisualNovelEngine.js";
+import { Flow, Scene } from "./Core/VisualNovelModules.js";
+import "./Maps/MainMap.js";
+
+// Escena de inicio
+vnEngine.defineScene('start', [
+  Scene.Show("Scene/main_background"), // Fondo principal
+  Flow.Choice([
+    Flow.Action("New Game", [Flow.Jump('MainMap')], { typeMenu: "MENU" }),
+    Flow.Action("Load", [() => saveSystem.showSaveLoadScreen(true)], { typeMenu: "MENU" }),
+    Flow.Action("Options", [Flow.Jump('OptionsMenu')], { typeMenu: "MENU" })
+  ])
+]);
+
+// Iniciar desde 'start'
+vnEngine.startScene('start');
+</code></pre>
+                <p>Este archivo define la pantalla inicial del juego, con un fondo y un menú lateral
+                    (<code class="language-javascript">typeMenu: "MENU"</code>).</p>
+            </div>
+
+            <!-- Paso 2: Carpeta Media/Scene -->
+            <div class="guide-step">
+                <h3>2. Fondo de escena – Carpeta <code class="language-javascript">Media/Scene</code></h3>
+                <p>La imagen usada en <code class="language-javascript">Scene.Show("Scene/main_background")</code> debe
+                    estar en la carpeta:</p>
+                <pre><code class="language-javascript">./Media/Scene/main_background.webp</code></pre>
+                <p>Segun tu organizacion puedes indicar cualquier ruta o simplemente apuntar a la raiz de la carpeta
+                    media usando solo el nombre del archivo, Puedes usar cualquier formato compatible (.webp, .png,
+                    .jpg) y cambiarlo según la hora del día si lo
+                    deseas, usando <code class="language-javascript">isAffectedByTime</code>.</p>
+            </div>
+
+            <!-- Paso 3: Definir el Mapa -->
+            <div class="guide-step">
+                <h3>3. Crear el Mapa – Archivo <code class="language-javascript">MainMap.js</code></h3>
+                <p>El mapa es una escena especial que usa <code class="language-javascript">MapScene.Go(...)</code>,
+                    permitiendo definir un fondo y
+                    opciones posicionadas sobre él.</p>
+                <pre><code class="language-javascript">// ./Maps/MainMap.js
+import { MapScene, Flow, Scene } from "../Core/VisualNovelModules.js";
+import { MainMenu } from "../Core/core.js";
+
+// Definir MainMap
+vnEngine.defineScene('MainMap',
+  MapScene.Go("Scene/home_menu", [
+      Flow.Action("Home", [
+          Flow.Jump("house_history")
+      ], {
+          icon: "Icons/icon_mansion",
+          position: { xpos: 50, ypos: 50 }
+      }),
+      Flow.Action("School", [
+          Flow.Jump("School")
+      ], {
+          icon: "Icons/icon_building",
+          position: { xpos: 25, ypos: 75 }
+      })
+  ], [MainMenu], "Audio/backyard_ambience", true)
+);
+</code></pre>
+                <ul>
+                    <li><strong>"home_menu"</strong>: nombre del fondo del mapa (buscado como
+                        <code class="language-javascript">Media/Scene/home_menu.webp</code>)
+                    </li>
+                    <li><strong>Opciones del mapa</strong>: acciones posicionadas en coordenadas relativas</li>
+                    <li><strong>[MainMenu]</strong>: menú flotante o fijo que aparece junto al mapa</li>
+                    <li><strong>"backyard_ambience"</strong>: audio ambiental (buscado como
+                        <code class="language-javascript">Media/Audio/backyard_ambience.mp3</code>)
+                    </li>
+                    <li><strong>true</strong>: indica que esta escena cambia según la hora del día</li>
+                </ul>
+            </div>
+
+            <!-- Paso 4: Posicionamiento -->
+            <div class="guide-step">
+                <h3>4. Posicionamiento de opciones – Uso de <code class="language-javascript">xpos</code> e <code
+                        class="language-javascript">ypos</code></h3>
+                <p>Los valores <code class="language-javascript">xpos</code> e <code
+                        class="language-javascript">ypos</code> dentro de
+                    <code class="language-javascript">position: { xpos: X, ypos: Y }</code> son porcentajes del
+                    ancho/alto del fondo, no píxeles
+                    absolutos.
+                </p>
+
+                <h4>Ejemplo:</h4>
+                <pre><code class="language-javascript">position: { xpos: 50, ypos: 50 }</code></pre>
+                <p>→ Esto centrará la opción en la pantalla.</p>
+
+                <pre><code class="language-javascript">position: { xpos: 25, ypos: 75 }</code></pre>
+                <p>→ Esto ubicará la opción en el 25% del ancho y 75% del alto del contenedor.</p>
+
+                <h4>Ventajas del posicionamiento relativo:</h4>
+                <ul>
+                    <li>Adapta automáticamente las opciones a distintas resoluciones</li>
+                    <li>No necesitas ajustar las coordenadas manualmente por dispositivo</li>
+                    <li>Permite usar imágenes grandes como mapas reutilizables</li>
+                </ul>
+            </div>
+
+            <!-- Paso 5: Imágenes recomendadas -->
+            <div class="guide-step">
+                <h3>5. Recomendaciones visuales</h3>
+                <p>Para los mapas, se recomienda usar imágenes grandes y bien organizadas, como:</p>
+                <pre><code class="language-javascript">./Media/Scene/home_menu.webp</code></pre>
+                <p>También puedes tener variantes por hora del día:</p>
+                <pre><code class="language-javascript">./Media/Scene/home_menu_morning.webp
+./Media/Scene/home_menu_night.webp</code></pre>
+                <p>Estas variantes se cargan automáticamente si activaste <code
+                        class="language-javascript">isAffectedByTime = true</code>.</p>
+                <p>Debes tener los background con su sufijo bien definido dentro de la carpeta base donde estara
+                    apuntando variantes disponibles: </p>
+                <pre><code class="language-javascript">(hour >= 5 && hour < 12) -> "_morning"</code></pre>
+                <pre><code class="language-javascript">(hour >= 12 && hour < 17) -> "_afternoon"</code></pre>
+                <pre><code class="language-javascript">(hour >= 17 && hour < 20) -> "_sunset"</code></pre>
+                <pre><code class="language-javascript">(hour >= 20 || hour < 1) -> "_night"</code></pre>
+                <pre><code class="language-javascript">(hour >= 1 || hour < 5) -> "_night2"</code></pre>
+
+            </div>
+
+            <!-- Paso 6: Archivos Iconos -->
+            <div class="guide-step">
+                <h3>6. Iconos del Mapa</h3>
+                <p>dado que los iconos del mapa estan apuntando a Icons/... deben estar en la carpeta icons dentro de la
+                    carpeta Media(puedes apuntar a cualquier carpeta):</p>
+                <pre><code class="language-javascript">./Media/Icons/icon_mansion.png</code></pre>
+                <p>Y se pueden usar directamente así:</p>
+                <pre><code class="language-javascript">Flow.Action("Home", [...], {
+  icon: "Icons/icon_mansion"
+})</code></pre>
+                <p>El motor completa automáticamente la ruta con <code
+                        class="language-javascript">./Media/Icons/${icon}.png</code>.</p>
+            </div>
+
+            <!-- Paso 7: Archivo Opcional - Menú Flotante -->
+            <div class="guide-step">
+                <h3>7. Menú flotante – Opcional</h3>
+                <p>Si incluyes un menú adicional (como el menú principal), se muestra en la esquina superior izquierda.
+                </p>
+                <pre><code class="language-javascript">MapScene.Go("home_menu", [
+  ...
+], [MainMenu], ...)</code></pre>
+                <p>Esto permite al jugador acceder a funciones como guardar, cargar o salir sin salir del mapa.</p>
+            </div>
+
+            <!-- Paso 8: Ejecutar y probar -->
+            <div class="guide-step">
+                <h3>8. Probar tu proyecto</h3>
+                <p>Asegúrate de que tu estructura final sea similar a:</p>
+                <pre><code class="language-javascript">.
+├── Core/
+│   ├── VisualNovelEngine.js
+│   ├── VisualNovelModules.js
+│   └── core.js
+├── Maps/
+│   └── MainMap.js
+├── Media/
+│   ├── Scene/
+│   │   └── home_menu.webp
+│   ├── Icons/
+│   │   ├── icon_mansion.png
+│   │   └── icon_building.png
+│   └── Audio/
+│       └── backyard_ambience.mp3
+└── app.html
+</code></pre>
+                <p>Abre <code class="language-javascript">app.html</code> en tu navegador y deberías ver:</p>
+                <ul>
+                    <li>Un fondo</li>
+                    <li>Un menú lateral</li>
+                    <li>Una imagen de mapa con dos opciones posicionadas</li>
+                </ul>
+            </div>
+
+            <!-- Paso 9: Personalizar más -->
+            <div class="guide-step">
+                <h3>9. Añadir más opciones al mapa</h3>
+                <p>Puedes agregar cuantas opciones quieras, simplemente define su posición con
+                    <code class="language-javascript">{ xpos: X, ypos: Y }</code>:
+                </p>
+                <pre><code class="language-javascript">Flow.Action("Biblioteca", [
+  Flow.Jump("Library")
+], {
+  icon: "Icons/icon_library",
+  position: { xpos: 70, ypos: 30 }
+})</code></pre>
+                <p>Esta opción aparecerá en el 70% del ancho y 30% del alto de la pantalla.</p>
+            </div>
+
+            <!-- Paso 10: Más recursos -->
+            <div class="guide-step">
+                <h3>10. Organización flexible</h3>
+                <p>El motor está diseñado para ser modular. Puedes organizar tus archivos como desees:</p>
+                <ul>
+                    <li>Crea carpetas adicionales en <code class="language-javascript">./Maps/</code> para cada mapa
+                    </li>
+                    <li>Define nuevas escenas en <code class="language-javascript">./History/</code></li>
+                    <li>Usa <code class="language-javascript">CharacterModel</code> para personajes animados</li>
+                </ul>
+                <p>Todo esto puedes personalizarlo fácilmente sin afectar el funcionamiento base del motor.</p>
+            </div>
+        </section>
+        <section id="creating-characters">
+            <h2>Creación de Personajes Personalizados</h2>
+            <p>El motor permite crear personajes personalizados extendiendo la clase base <code
+                    class="language-javascript">CharacterModel</code>, definida en <code
+                    class="language-javascript">./Core/VisualNovelModules.js</code>.</p>
+
+            <!-- Paso 1: Estructura de un personaje -->
+            <div class="guide-step">
+                <h3>1. Estructura básica de un personaje</h3>
+                <p>Crea un archivo en la carpeta <code class="language-javascript">./Characters/Dana.js</code>:</p>
+                <pre><code class="language-javascript">// ./Characters/Dana.js
+import { CharacterModel } from "../Core/VisualNovelModules.js";
+
+export class DanaModel extends CharacterModel {
+  Name = "Dana";
+  State = {
+    Default: "Character/dana_default",
+    Happy: "Character/dana_happy",
+    Sad: "Character/dana_sad",
+    Angry: "Character/dana_angry"
+  };
+}
+
+// Exportar instancia única
+export const Dana = new DanaModel();</code></pre>
+                <ul>
+                    <li><strong>Name</strong>: Nombre del personaje.</li>
+                    <li><strong>State</strong>: Diccionario de estados visuales (ej: emociones).</li>
+                    <li><strong>Exportación</strong>: Se exporta una instancia lista para usar en escenas.</li>
+                </ul>
+            </div>
+
+            <!-- Paso 2: Usar el personaje en escena -->
+            <div class="guide-step">
+                <h3>2. Mostrar personaje en escena</h3>
+                <p>Una vez creado, puedes usar tu personaje desde cualquier bloque de historia:</p>
+                <pre><code class="language-javascript">// Escena donde aparece Dana
+//escena inical que se dispara desde el map main menu
+vnEngine.defineScene('house_history', [
+    Flow.If(Flow.Var("DanaFriendshipLevel", "==", 0), [
+        Scene.Show("Scene/home/home_day"),
+        Dialogue.Say("Tú", "¡Estoy en casa!"),
+        Dana.Show(),
+        Dana.Say("que haces en casa deberias estar en la escuela"),
+        Dialogue.Say("Tú", "No queria estar en clases"),
+        Flow.Set("DanaFriendshipLevel", 1),
+        Dana.Say("Ok"),
+        Flow.Jump('Home')
+    ], [
+        Flow.Jump('Home')
+    ]
+    )
+]);
+//otra escena que se puede llamar desde cualquie parte del proyecto siempre que se haya importado correctamente los archivos
+vnEngine.defineScene('Dana_Home_0', [
+  Scene.Show("Scene/home/home_day", "Audio/house_ambience"),
+  Dana.Show("Happy"), // Muestra Dana feliz
+  Dialogue.Say("Dana", "¿Otra vez perdiendo el tiempo?"),
+  Flow.Choice([
+    Flow.Action("Disculparse", [Flow.Set("danaFriendshipLevel", 2)]),
+    Flow.Action("Reírse", [Dana.Say("No es gracioso")])
+  ])
+]);</code></pre>
+                <p>Esto usará automáticamente las imágenes o videos desde <code
+                        class="language-javascript">./Media/Character/</code>.</p>
+            </div>
+
+            <!-- Paso 3: Uso avanzado con RoomScene -->
+            <div class="guide-step">
+                <h3>3. Uso en escenas con <code class="language-javascript">RoomScene.Go(...)</code></h3>
+                <p>Puedes integrar personajes dentro de escenas con menús automáticos usando <code
+                        class="language-javascript">RoomScene.Go(...)</code>:</p>
+                <pre><code class="language-javascript">// En HomeHistory.js
+import { vnEngine } from "../Core/VisualNovelEngine.js";
+import { RoomScene, Scene, Dialogue, Flow } from "../Core/VisualNovelModules.js";
+import { Dana } from "../Characters/Dana.js";
+
+const HomeMenu = [
+    Flow.Action("Dormitorio", [Flow.Jump("Bedroom")], { icon: "Icons/home/myroom_day" }),
+    Flow.Action("Sala", [Flow.Jump("LivingRoom")], { icon: "Icons/home/livingroom_day" }),
+    Flow.Action("Cocina", [Flow.Jump("Kitchen")], { icon: "Icons/home/kitchen_day" }),
+    Flow.Action("Baño", [Flow.Jump("Bathroom")], { icon: "Icons/home/hometoilet_day" }),
+    Flow.Action("Jardín", [Flow.Jump("Backyard")], { icon: "Icons/home/yard_day" }),
+    Flow.Action("Regresar", [Flow.Jump("Home")], { icon: "Icons/icon_back" })
+];
+
+//escena inical que se dispara desde el map main menu
+vnEngine.defineScene('house_history', [
+    Flow.If(Flow.Var("DanaFriendshipLevel", "==", 0), [
+        Scene.Show("Scene/home/home_day"),
+        Dialogue.Say("Tú", "¡Estoy en casa!"),
+        Dana.Show(),
+        Dana.Say("que haces en casa deberias estar en la escuela"),
+        Dialogue.Say("Tú", "No queria estar en clases"),
+        Flow.Set("DanaFriendshipLevel", 1),
+        Dana.Say("Ok"),
+        Flow.Jump('Home')
+    ], [
+        Flow.Jump('Home')
+    ]
+    )
+]);
+function HomeStreetRandomEvent() {
+  const random = Math.floor(Math.random() * 4);
+  switch (random) {
+    case 0:
+      return Flow.Jump("Dana_Home_0");
+    default:
+      return Heero.Say("No hay nada por acá");
+  }
+}
+
+// Escena inicial con mapa interactivo
+vnEngine.defineScene('Home',
+  RoomScene.Go("Scene/home/home_day", [
+    HomeStreetRandomEvent,
+    Dialogue.Say("Narrador", "Has llegado a casa. ¿A dónde deseas ir?")
+  ], [...HomeMenu], "house_ambience")
+);</code></pre>
+                <p>Este ejemplo muestra cómo usar personajes junto con mapas interactivos.</p>
+            </div>
+
+            <!-- Paso 4: Funciones dinámicas -->
+            <div class="guide-step">
+                <h3>4. Eventos aleatorios y funciones dinámicas</h3>
+                <p>Tu motor permite usar funciones como parte del flujo de escenas. Por ejemplo, <code
+                        class="language-javascript">HomeStreetRandomEvent()</code>:</p>
+                <pre><code class="language-javascript">function HomeStreetRandomEvent() {
+  const random = Math.floor(Math.random() * 4);
+  switch (random) {
+    case 0:
+      return Flow.Jump("Dana_Home_0");
+    case 1:
+      return Flow.Jump("Dana_Talk_Late");
+    case 2:
+      return Flow.Jump("Dana_CheckIn");
+    default:
+      return Heero.Say("No hay nada por acá");
+  }
+}
+// otro ejemplo usando condicionales
+
+function HomeBeedromRandomEvent() {
+    const random = Math.floor(Math.random() * 4);
+
+    switch (random) {
+        case 0:
+            return Dana.GetVar("Bedroom_Dana_01") != true
+                && vnEngine.GetCurrenTime().hour >= 8
+                && vnEngine.GetCurrenTime().hour <= 12
+                ? Flow.Jump("Bedroom_Dana_01") : Heero.Say("No hay nada por acá");
+        default:
+            return Heero.Say("No hay nada por acá");
+    }
+}
+</code></pre>
+                <p>Esta función puede usarse directamente en cualquier escena y retorna comandos válidos para el motor.
+                </p>
+            </div>
+
+            <!-- Paso 5: Organización de carpetas -->
+            <div class="guide-step">
+                <h3>5. Recomendación de organización</h3>
+                <p>Sigue esta estructura para mantener modularidad, pero ten siempre en mente que puedes usar tu propia
+                    estructura:</p>
+                <pre><code class="language-javascript">.
+├── Characters/
+│   ├── Dana.js
+│   └── Heero.js
+├── Maps/
+│   └── MainMap.js
+├── History/
+│   └── HomeHistory.js
+├── Menus/
+│   └── HomeMenu.js
+├── Media/
+│   └── Character/
+│       ├── dana_default.webp
+│       ├── dana_happy.webp
+│       └── dana_angry.webp
+└── app.js</code></pre>
+                <p>Esto facilita la expansión futura del proyecto y mantiene todo ordenado.</p>
+            </div>
+        </section>
+    </main>
+    <footer>
+        <div class="container">
+            <p>© 2025 - Wilber Jose Matus Gonzalez</p>
+            <p><a href="https://github.com/Wilber1987">GitHub</a></p>
+        </div>
+    </footer>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/prism.min.js"></script>
+</body>
+
+</html>
