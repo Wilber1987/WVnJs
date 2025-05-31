@@ -1,6 +1,6 @@
 # WVnJs
 
-Un motor modular de novelas visuales estilo Ren'Py, hecho en JavaScript puro.
+Un motor modular de novelas visuales inspirado en Ren'Py, hecho en JavaScript puro.
 Permite crear juegos interactivos en la web con:
 
 Escenas dinámicas (imágenes o videos)
