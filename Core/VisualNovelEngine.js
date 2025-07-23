@@ -17,6 +17,7 @@ export class VisualNovelEngine {
     }
   }
   constructor() {
+    this.jumpTriggered = false;
     this.scenes = {};
     this.currentScene = null;
     this.currentSceneImage = null;
@@ -25,25 +26,44 @@ export class VisualNovelEngine {
     this.activeCharacters = new Set(); // Track active characters
     this.transitionDuration = 300; // Default transition duration in ms
     this.uiElements = {
-      gameContainer: document.getElementById('game-container'),
-      textContainer: document.getElementById('text-container'),
-      textBox: document.getElementById('text-box'),
-      nameBox: document.getElementById('name-box'),
-      choicesContainer: document.getElementById('choices-container'),
-      choicesContainerMenu: document.getElementById('choices-container-menu'),
-      choicesContainerFullScreen: document.getElementById('choices-container-fullscreen'),
-      background: document.getElementById('background'),
-      characterSprites: document.getElementById('character-sprites')
+      gameContainer: this.getUiElement('game-container'),
+      gloablMenuContainer: this.getUiElement('global-choices-container-menu'),
+      textContainer: this.getUiElement('text-container'),
+      textBox: this.getUiElement('text-box'),
+      nameBox: this.getUiElement('name-box'),
+      choicesContainer: this.getUiElement('choices-container'),
+      choicesContainerMenu: this.getUiElement('choices-container-menu'),
+      choicesContainerFullScreen: this.getUiElement('choices-container-fullscreen'),
+      background: this.getUiElement('background'),
+      characterSprites: this.getUiElement('character-sprites')
     };
     this.TimeSystem = new TimeSystem(this);
     this.activeAudioInstances = [];
-    this.currentBackgroundAudio = null;
+    /**@type {HTMLAudioElement?} */
+    this.currentBackgroundAudio = new Audio();
     this.currentCommandIndex = 0;
+    this.currentsBlocks = [];
     // CSS for transitions
     this.injectTransitionStyles();
   }
+  getUiElement(id) {
+    let uiElement = document.getElementById(id);
+    if (uiElement) {
+      return uiElement;
+    }
+    uiElement = document.createElement("div");
+    uiElement.id = id;
+    document.body.appendChild(uiElement);
+    return uiElement;
+  }
+
+  setglobalMenu(command) {
+    this.showChoices(command.options, true, this.currentScene);
+  }
 
   stopAllAudio() {
+    console.log(this.activeAudioInstances);
+
     this.activeAudioInstances.forEach(sound => {
       try {
         sound.pause();
@@ -105,6 +125,9 @@ export class VisualNovelEngine {
 
   // Iniciar una escena
   startScene(sceneName, inBlock) {
+    this.jumpTriggered = true;
+    // Limpiar variables temporales
+    this.currentCommandIndex = 0;
     console.log(sceneName, this.scenes[sceneName]);
 
     if (!this.scenes[sceneName]) {
@@ -112,35 +135,52 @@ export class VisualNovelEngine {
       return;
     }
     this.currentScene = sceneName;
-    this.executeBlock(this.scenes[sceneName], 0);
+    this.currentsBlocks = this.scenes[sceneName]
+    this.executeBlock(this.currentsBlocks, sceneName);
   }
 
   goToCurrentScene() {
-    if (!this.scenes[this.currentScene]) {
-      console.error(`Escena no encontrada: ${sceneName}`);
-      return;
+    try {
+      if (!this.scenes[this.currentScene]) {
+        console.error(`Escena no encontrada: ${this.currentScene}`);
+        return;
+      }
+      this.currentsBlocks = this.scenes[this.currentScene]
+      this.executeBlock(this.currentsBlocks, this.currentScene);
+    } catch (error) {
+      console.log(error);
+      console.log(this.currentScene);
+      console.table(this.scenes[this.currentScene]);
     }
-    this.executeBlock(this.scenes[this.currentScene]);
   }
 
   // Ejecutar un bloque de comandos
-  async executeBlock(block, inBlock) {
-    this.currentCommandIndex = 0;
-    for (const command of block) {
-      if (inBlock && this.currentCommandIndex < inBlock) {
-        this.currentCommandIndex++;
-        continue;
-      }
-      const returnCommand = await this.processCommand(command);
-      this.currentCommandIndex++;
-      if (returnCommand == false) {
-        break;
-      }
+  async executeBlock(blocks = this.currentsBlocks, sceneName) {
+    try {
+      this.currentCommandIndex = 0;
+      for (const command of blocks) {
 
+        if (sceneName != this.currentScene && !this.jumpTriggered) return; // ✅ Salir si ya se saltó
+        else this.jumpTriggered = false
+
+        const returnCommand = await this.processCommand(command, sceneName);
+        this.currentCommandIndex++;
+        if (returnCommand == false) {
+          if (this.clickHandler) document.removeEventListener('click', this.clickHandler);
+          if (this.keyHandler) document.removeEventListener('keypress', this.keyHandler);
+          break;
+        }
+      }
+    } catch (error) {
+      console.log(error);
+      console.table(blocks);
     }
+
   }
+
   // Procesar un comando individual
-  async processCommand(commandValue) {
+  async processCommand(commandValue, sceneName) {
+    if (this.jumpTriggered) return;
     let command = {}
     if (typeof commandValue === "function") {
       command = commandValue;
@@ -164,28 +204,38 @@ export class VisualNovelEngine {
     if (!command || !command.type) return;
     switch (command.type) {
       case 'say':
-        await this.showText(command.name, command.text, command.audio);
+        await this.showText(command.name, command.text, command.audio, command.isFemale);
         //await this.waitForClick();
         break;
       case 'show':
         await this.showCharacter(command.who, command.image, command.position);
         break;
-
+      case 'audio':
+        if (command.audio) {
+          this.stopCurrentAudio()
+          const audioInstance = new Audio(command.audio);
+          audioInstance.loop = command.loopAudio ?? true;
+          try {
+            await audioInstance.play();
+            this.currentBackgroundAudio = audioInstance; // Guardamos para detener después
+          } catch (err) {
+            console.warn('Error al reproducir audio:', err);
+          }
+        }
+        break;
       case 'hide':
         await this.hideCharacter(command.who);
         break;
-
       case 'scene':
         await this.changeBackground(command);
         break;
-
       case 'jump':
         this.clearMenus();
         this.startScene(command.target);
         return false; // Exit current execution
 
       case 'choice':
-        await this.showChoices(command.options);
+        await this.showChoices(command.options, undefined, sceneName);
         break;
 
       case 'set':
@@ -194,10 +244,12 @@ export class VisualNovelEngine {
 
       case 'if':
         const conditionMet = this.evaluateCondition(command.condition);
+        console.log(conditionMet);
+
         if (conditionMet) {
-          await this.executeBlock(command.then);
+          await this.executeBlock(command.then, sceneName);
         } else if (command.else) {
-          await this.executeBlock(command.else);
+          await this.executeBlock(command.else, sceneName);
         }
         break;
 
@@ -211,34 +263,39 @@ export class VisualNovelEngine {
     return true;
   }
 
-  // Mostrar texto
-  async showText(name, text, audio = null) {
+
+  /**
+   * Muestra texto con animación de escritura (letra por letra)
+   * @param {string} name - Nombre del hablante
+   * @param {string} text - Texto a mostrar
+   * @param {string|null} [audio] - Audio opcional asociado
+   */
+  async showText(name, text, audio = null, isFemale = false) {
+    // @ts-ignore TODO REVISAR
     this.uiElements.textBox.block = "flex";
-    this.stopAllAudio();
+    if (isFemale) {
+      this.uiElements.nameBox.className = "female"
+    } else {
+      this.uiElements.nameBox.className = "male"
+    }
     this.uiElements.nameBox.textContent = name || '';
-    this.uiElements.textBox.textContent = text;
+    this.uiElements.textBox.textContent = '';
     this.history.push({ name, text });
 
     let audioFinished = false;
-
-    // Lista temporal de audios creados en este showText
     const localAudios = [];
 
     if (audio) {
+      this.stopAllAudio();
       const sound = new Audio(audio);
       sound.loop = false;
-
-      // Registrar el audio como activo
       this.activeAudioInstances.push(sound);
       localAudios.push(sound);
-
       try {
         await sound.play();
-
         sound.onended = () => {
           audioFinished = true;
         };
-
         sound.onerror = () => {
           console.warn('Error al reproducir audio:', audio);
           audioFinished = true;
@@ -248,28 +305,52 @@ export class VisualNovelEngine {
         audioFinished = true;
       }
     }
+    this.uiElements.textContainer.style.opacity = "1";
+    // ANIMACIÓN DE TEXTO LETRA POR LETRA
+    const textBox = this.uiElements.textBox;
+    textBox.textContent = '';
+    textBox.style.opacity = "0"; // Ocultar antes de comenzar
 
-    this.uiElements.textContainer.style.opacity = 1;
+    // Esperar un fotograma para permitir que transition funcione
+    await new Promise(r => requestAnimationFrame(r));
 
-    // Esperar hasta que termine el audio o el usuario haga click
-    await new Promise(resolve => {
+    // Mostrar suavemente
+    textBox.style.opacity = "1";
+
+    // Animación letra por letra
+    for (let i = 0; i < text.length; i++) {
+      textBox.textContent += text[i];
+      await new Promise(resolve => setTimeout(resolve, 5));
+    }
+
+    // Esperar al menos 2 segundos antes de permitir avanzar
+    const minWait = new Promise(resolve => setTimeout(resolve, 1000));
+
+    // También esperar que termine el audio o que el usuario interactúe
+    const userOrAudio = new Promise(resolve => {
       const checkAudioEnd = setInterval(() => {
         if (audioFinished) {
           clearInterval(checkAudioEnd);
-          resolve();
+          cleanup();
+          resolve(true);
         }
       }, 200);
 
-      const clickHandler = () => {
+      const cleanup = () => {
         document.removeEventListener('click', clickHandler);
         document.removeEventListener('keypress', keyHandler);
         clearInterval(checkAudioEnd);
-        resolve();
+      };
+
+      const clickHandler = () => {
+        cleanup();
+        resolve(true);
       };
 
       const keyHandler = (e) => {
         if (e.key === 'Enter' || e.key === ' ') {
-          clickHandler();
+          cleanup();
+          resolve(true);
         }
       };
 
@@ -277,12 +358,17 @@ export class VisualNovelEngine {
       document.addEventListener('keypress', keyHandler);
     });
 
-    // Detener todos los audios lanzados en este showText()
+    // Esperar ambos: mínimo 2 segundos Y audio/usuario
+    await Promise.all([minWait, userOrAudio]);
+
+    // Detener todos los audios de esta escena
     localAudios.forEach(sound => {
       sound.pause();
       sound.currentTime = 0;
     });
   }
+
+
   // Mostrar personaje con transición
   async showCharacter(character, image, position = 'center') {
     // Si ya está visible, solo actualizamos la imagen o video
@@ -290,6 +376,7 @@ export class VisualNovelEngine {
     if (this.activeCharacters.has(character)) {
       const existing = document.querySelector(`.character[data-character="${character}"]`);
       if (existing) {
+        // @ts-ignore
         existing.src = imageUrl;
         existing.className = `character visible ${position}`;
         return;
@@ -298,7 +385,7 @@ export class VisualNovelEngine {
     // Crear elemento nuevo
     let element;
     // Detectar si es un video (por extensión)
-    const isVideo = /\.(webm|mp4|ogg)$/i.test(imageUrl);
+    const isVideo = /\.(webm|mp4|ogg|mov)$/i.test(imageUrl);
     if (isVideo) {
       element = document.createElement('video');
       element.src = imageUrl;
@@ -314,6 +401,7 @@ export class VisualNovelEngine {
 
     element.className = `character ${position}`;
     element.dataset.character = character;
+    // @ts-ignore
     element.alt = character;
 
     this.uiElements.characterSprites.appendChild(element);
@@ -337,36 +425,39 @@ export class VisualNovelEngine {
   }
 
   async loadImageWithExtensions(basePath) {
-    const extensions = ['webp', 'png', 'jpg', 'gif', "webm", "mp4"];
-    // Si la imagen tiene extensión, intenta cargarla directamente
+    const extensions = ['mov', 'webp', 'png', 'jpg', 'gif', 'webm', 'mp4'];
     const hasExtension = /\.\w+$/.test(basePath);
-    let validImage = null;
+
+    // Si ya tiene extensión, intentar directamente
     if (hasExtension) {
-      const response = await fetch(basePath, { method: 'HEAD' }).catch(() => null);
-      if (response?.ok) {
-        return basePath;
+      try {
+        const response = await fetch(basePath, { method: 'HEAD' });
+        if (response.ok) {
+          return basePath;
+        }
+      } catch (_) {
+        // No mostrar nada aquí para evitar ruido en consola
       }
     }
 
-    // Si no hay extensión o falló la carga, intentar con varias extensiones
-    if (!validImage) {
-      console.warn(`No se pudo cargar la imagen para icono "${basePath}"`);
-    }
+    // Probar con múltiples extensiones silenciosamente
     for (const ext of extensions) {
       const url = `${basePath}.${ext}`;
       try {
         const response = await fetch(url, { method: 'HEAD' });
         if (response.ok) {
-          return url; // Retorna la URL válida
+          return url;
         }
-      } catch (e) {
-        continue;
+      } catch (_) {
+        // No mostrar errores aquí
       }
     }
 
+    // Solo mostrar advertencia si ningún recurso fue válido
     console.warn(`Ninguna extensión válida encontrada para: ${basePath}`);
-    return null; // No se encontró imagen válida
+    return null;
   }
+
 
   // Ocultar personaje con transición
   async hideCharacter(character) {
@@ -382,7 +473,7 @@ export class VisualNovelEngine {
       await new Promise(resolve => {
         el.addEventListener('transitionend', () => {
           el.remove();
-          resolve();
+          resolve(true);
         }, { once: true });
       });
     }
@@ -403,7 +494,7 @@ export class VisualNovelEngine {
       await new Promise(resolve => {
         el.addEventListener('transitionend', () => {
           el.remove();
-          resolve();
+          resolve(true);
         }, { once: true });
       });
     }
@@ -417,7 +508,7 @@ export class VisualNovelEngine {
     }
 
     // Detener cualquier audio previo
-    this.stopCurrentAudio();
+
     this.hideAllCharacter()
 
     const currentBg = this.uiElements.background?.querySelector('.background-image:not(.fade-out)');
@@ -426,22 +517,25 @@ export class VisualNovelEngine {
     newBgContainer.style.position = 'absolute';
     newBgContainer.style.width = '100%';
     newBgContainer.style.height = '100%';
-    newBgContainer.style.opacity = 0;
+    newBgContainer.style.opacity = "0";
 
     let mediaElement = null;
     let audioInstance = null;
 
     // Reproducir audio asociado si existe
     if (command.audio) {
+      this.stopAllAudio()
       audioInstance = new Audio(command.audio);
       audioInstance.loop = command.loopAudio ?? true;
       try {
         await audioInstance.play();
-        this.currentBackgroundAudio = audioInstance; // Guardamos para detener después
+        this.activeAudioInstances.push(audioInstance)
+        //this.currentBackgroundAudio = audioInstance; // Guardamos para detener después
       } catch (err) {
         console.warn('Error al reproducir audio:', err);
       }
     }
+    command.video = command.video ?? await this.tryLoadVideo(command.image);
 
     // Manejo de video
     if (command.video) {
@@ -467,7 +561,7 @@ export class VisualNovelEngine {
         mediaElement.src = validVideoUrl;
         mediaElement.autoplay = true;
         mediaElement.muted = false;
-        mediaElement.loop = command.loopScene ?? false;
+        mediaElement.loop = command.loopScene ?? true;
         mediaElement.playsInline = true;
         mediaElement.style.width = '100%';
         mediaElement.style.height = '100%';
@@ -505,7 +599,7 @@ export class VisualNovelEngine {
     }
 
     // Manejo de imagen
-    else if (command.image) {
+    else if (command.image && command.video == null) {
       // Intentar encontrar una imagen válida
       let imageUrl = command.image;
 
@@ -554,37 +648,38 @@ export class VisualNovelEngine {
   getTimeSuffix() {
     const hour = this.TimeSystem.getCurrentTime().hour;
 
-    if (hour >= 5 && hour < 12) return "_morning";
-    if (hour >= 12 && hour < 17) return "_afternoon";
-    if (hour >= 17 && hour < 20) return "_sunset";
+    if (hour >= 5 && hour < 12) return "_day";
+    if (hour >= 12 && hour < 15) return "_day";
+    if (hour >= 15 && hour < 20) return "_afternoon";
     if (hour >= 20 || hour < 1) return "_night";
-    if (hour >= 1 || hour < 5) return "_night2";
+    if (hour >= 1 || hour < 5) return "_night";
 
     return "_day"; // fallback
   }
 
-  async tryLoadVideo(url, extensions = ['mp4', 'webm', 'ogg', 'avi']) {
+  async tryLoadVideo(url, extensions = ['mp4', 'webm', 'ogg', 'avi', 'AVI']) {
+
     for (const ext of extensions) {
       const testUrl = `${url}.${ext}`;
       try {
-        const response = await fetch(testUrl, { method: 'HEAD' });
-        if (response.ok) {
-          return testUrl; // Retorna la primera extensión que funcione
+        const response = await fetch(testUrl, { method: 'HEAD' }).catch(() => null);
+        if (response?.ok) {
+          return testUrl; // Retorna la primera extensión válida
         }
-      } catch (e) {
-        console.warn(`Error al probar video: ${testUrl}`, e);
-        continue;
+      } catch (_) {
+        // Silenciar errores por extensión no encontrada
       }
     }
-    console.error(`No se encontró ningún formato válido para el video: ${url}`);
+    //console.error(`No se encontró ningún formato válido para el video: ${url}`);
     return null;
   }
 
 
 
-  async showChoices(options) {
-    this.uiElements.textContainer.style.opacity = 0;
-    const validOptions = options.filter(option =>
+
+  async showChoices(options, isGlobal = false, sceneName) {
+    this.uiElements.textContainer.style.opacity = "0";
+    const validOptions = options.filter((/** @type {{ condition: any; }} */ option) =>
       !option.condition || this.evaluateCondition(option.condition)
     );
 
@@ -605,13 +700,16 @@ export class VisualNovelEngine {
       tabWrapper.style.gridTemplateColumns = `repeat(${Math.min(4, tabOptions.length)}, 1fr)`;
 
       for (const option of tabOptions) {
-        const button = await this.createChoiceButton(option);
+        const button = await this.createChoiceButton(option, undefined, sceneName);
         tabWrapper.appendChild(button);
       }
-
-      this.uiElements.choicesContainer?.appendChild(tabWrapper);
-      this.uiElements.choicesContainer.style.display = "grid";
-      this.uiElements.choicesContainer.style.opacity = "1";
+      if (!isGlobal) {
+        this.uiElements.choicesContainer?.appendChild(tabWrapper);
+        this.uiElements.choicesContainer.style.display = "grid";
+        this.uiElements.choicesContainer.style.opacity = "1";
+      } else {
+        this.uiElements.gloablMenuContainer?.appendChild(tabWrapper);
+      }
     }
 
     // 2. Menú lateral fijo - Tipo MENU
@@ -621,13 +719,17 @@ export class VisualNovelEngine {
       menuWrapper.className = 'menu-wrapper menu-container';
 
       for (const option of menuOptions) {
-        const button = await this.createChoiceButton(option);
+        const button = await this.createChoiceButton(option, undefined, sceneName);
         menuWrapper.appendChild(button);
       }
+      if (!isGlobal) {
+        this.uiElements.choicesContainerFullScreen?.appendChild(menuWrapper);
+        this.uiElements.choicesContainerFullScreen.style.display = "flex";
+        this.uiElements.choicesContainerFullScreen.style.opacity = "1"
 
-      this.uiElements.choicesContainerFullScreen?.appendChild(menuWrapper);
-      this.uiElements.choicesContainerFullScreen.style.display = "flex";
-      this.uiElements.choicesContainerFullScreen.style.opacity = "1"
+      } else {
+        this.uiElements.gloablMenuContainer?.appendChild(menuWrapper);
+      }
     }
 
     // 3. Menú flotante - No bloquea el flujo
@@ -638,13 +740,17 @@ export class VisualNovelEngine {
       floatingWrapper.className = 'menu-wrapper menu-floating-container';
 
       for (const option of floatingOptions) {
-        const button = await this.createChoiceButton(option);
+        const button = await this.createChoiceButton(option, undefined, sceneName);
         floatingWrapper.appendChild(button);
       }
-
-      this.uiElements.choicesContainerMenu?.appendChild(floatingWrapper);
-      this.uiElements.choicesContainerMenu.style.display = "flex";
-      this.uiElements.choicesContainerMenu.style.opacity = "1"
+      if (!isGlobal) {
+        this.uiElements.choicesContainerMenu?.appendChild(floatingWrapper);
+        this.uiElements.choicesContainerMenu.style.display = "flex";
+        this.uiElements.choicesContainerMenu.style.opacity = "1"
+      }
+      else {
+        this.uiElements.gloablMenuContainer?.appendChild(floatingWrapper);
+      }
       // NO esperamos click ni promesa aquí
     }
     if (positionedOptions.length > 0) {
@@ -653,17 +759,33 @@ export class VisualNovelEngine {
       positionedWrapper.className = 'menu-wrapper menu-positioned-container';
       // 4. Opciones posicionadas manualmente
       for (const option of positionedOptions) {
-        const button = await this.createChoiceButton(option);
+        const button = await this.createChoiceButton(option, positionedWrapper, sceneName);
         button.style.position = 'absolute';
         //button.style.left = `${(this.uiElements.background.offsetWidth * (option.xpos / 100))}px`;
-        //button.style.top = `${(this.uiElements.background.offsetHeight * (option.ypos / 100))}px`;
+        //button.style.top = `${(this.uiElements.background.offsetHeight * (option.ypos / 100))}px`; heightPercent, widthPercent
         button.style.left = `${option.xpos}%`;
-        button.style.top = `${option.ypos}%`;
+        button.style.bottom = `${option.ypos}%`;
+        console.log("test", option);
+        if (option.heightPercent || option.widthPercent) {
+          console.log(option);
+
+          button.style.height = option.heightPercent ? `${option.heightPercent}%` : "auto";
+          button.style.width = option.widthPercent ? `${option.widthPercent}%` : "auto";
+          button.style.background = "none"
+        }
+
         positionedWrapper.appendChild(button);
       }
-      this.uiElements.choicesContainerFullScreen?.appendChild(positionedWrapper);
-      this.uiElements.choicesContainerFullScreen.style.display = "flex";
-      this.uiElements.choicesContainerFullScreen.style.opacity = "1"
+
+
+      if (!isGlobal) {
+        this.uiElements.choicesContainerFullScreen?.appendChild(positionedWrapper);
+        this.uiElements.choicesContainerFullScreen.style.display = "flex";
+        this.uiElements.choicesContainerFullScreen.style.opacity = "1"
+
+      } else {
+        this.uiElements.gloablMenuContainer?.appendChild(positionedWrapper);
+      }
     }
 
     // 5. Opciones normales (centradas)
@@ -671,25 +793,29 @@ export class VisualNovelEngine {
     if (normalOptions.length > 0) {
       this.uiElements.choicesContainer.style.opacity = "0"
       const defaultWrapper = document.createElement('div');
-      defaultWrapper.className = 'default-choice-wrapper';
+      defaultWrapper.className = 'menu-wrapper default-choice-wrapper';
       defaultWrapper.style.display = 'flex';
       defaultWrapper.style.flexDirection = 'column';
       defaultWrapper.style.gap = '10px';
 
       for (const option of normalOptions) {
-        const button = await this.createChoiceButton(option, defaultWrapper);
+        const button = await this.createChoiceButton(option, defaultWrapper, sceneName);
         defaultWrapper.appendChild(button);
       }
-      this.uiElements.choicesContainer?.appendChild(defaultWrapper);
-      this.uiElements.choicesContainer.style.display = "flex";
-      this.uiElements.choicesContainer.style.opacity = "1"
+      if (!isGlobal) {
+        this.uiElements.choicesContainer?.appendChild(defaultWrapper);
+        this.uiElements.choicesContainer.style.display = "flex";
+        this.uiElements.choicesContainer.style.opacity = "1"
 
+      } else {
+        this.uiElements.gloablMenuContainer?.appendChild(defaultWrapper);
+      }
       // Solo esperar click si hay opciones normales
       await new Promise(resolve => {
         const buttons = defaultWrapper.querySelectorAll('button');
         const handler = () => {
           buttons.forEach(btn => btn.removeEventListener('click', handler));
-          resolve();
+          resolve(true);
         };
 
         buttons.forEach(btn => btn.addEventListener('click', handler));
@@ -699,6 +825,11 @@ export class VisualNovelEngine {
 
   clearMenus() {
     this.uiElements.gameContainer?.querySelectorAll(".menu-wrapper").forEach(menu => {
+      // @ts-ignore
+      if (menu.parentNode.id == "global-choices-container-menu") {
+        return
+      }
+      // @ts-ignore
       menu.style.opacity = "0";
       setTimeout(() => {
         menu.remove();
@@ -709,10 +840,10 @@ export class VisualNovelEngine {
     this.uiElements.choicesContainerMenu.style.opacity = "0";
     //this.uiElements.textBox.innerHTML = "";
     //this.uiElements.nameBox.innerHTML = "";
-    this.uiElements.textContainer.style.opacity = 0;
+    this.uiElements.textContainer.style.opacity = "0";
   }
 
-  async createChoiceButton(option, menuWrapper) {
+  async createChoiceButton(option, menuWrapper, sceneName) {
     const button = document.createElement('button');
 
     // Mantener las clases originales según el tipo de menú
@@ -744,41 +875,61 @@ export class VisualNovelEngine {
 
     // Acción al hacer click
     button.addEventListener('click', async () => {
+      if (menuWrapper) {
+        menuWrapper.remove()
+      }
       button.classList.add('fade-out');
       await new Promise(resolve => setTimeout(resolve, this.transitionDuration));
       //console.log(menuWrapper);
       if (option.action) {
-        await this.executeBlock(option.action);
-        if (menuWrapper) {
-          menuWrapper.remove()
+        // @ts-ignore
+        if (button.parentNode?.parentNode?.id == 'global-choices-container-menu') {
+          this.jumpTriggered = true
         }
+        await this.executeBlock(option.action, sceneName);
+
       }
     });
 
     return button;
   }
   // Esperar click para continuar
-  waitForClick(time = Date.now()) {
-    console.log("espera", time);
-    
-    return new Promise(resolve => {
-      const handler = () => {
-        document.removeEventListener('click', handler);
-        document.removeEventListener('keypress', keyHandler);
-        resolve();
-        console.log("libera:", time);
-      };
+  // waitForClick queda auto-contenida y recuerda los listeners previos
+  waitForClick = (() => {
+    this.clickHandler = null;
+    this.keyHandler = null;
 
-      const keyHandler = (e) => {
-        if (e.key === ' ' || e.key === 'Enter') {
-          handler();
-        }
-      };
+    return (time = Date.now()) => {
+      console.log('espera', time);
 
-      document.addEventListener('click', handler);
-      document.addEventListener('keypress', keyHandler);
-    });
-  }
+      // ① Limpiar cualquier listener viejo
+      if (this.clickHandler) document.removeEventListener('click', this.clickHandler);
+      if (this.keyHandler) document.removeEventListener('keypress', this.keyHandler);
+
+      return new Promise(resolve => {
+        this.clickHandler = () => {
+          // ② Retirar los listeners actuales
+          document.removeEventListener('click', this.clickHandler);
+          // @ts-ignore
+          document.removeEventListener('keypress', this.keyHandler);
+          this.clickHandler = this.keyHandler = null;        // liberar variables
+          resolve(true);
+          console.log('libera:', time);
+        };
+
+        this.keyHandler = e => {
+          if (e.key === ' ' || e.key === 'Enter') {
+            this.clickHandler();
+          }
+        };
+
+        // ③ Registrar los nuevos listeners
+        document.addEventListener('click', this.clickHandler);
+        document.addEventListener('keypress', this.keyHandler);
+      });
+    };
+  })();
+
   // Evaluar condición mejorada
   evaluateCondition(condition) {
     if (!condition) return true;

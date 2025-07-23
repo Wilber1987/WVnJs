@@ -6,7 +6,7 @@ export class Scene {
         return {
             type: "scene",
             image: `${domainUrl}/${url}`,
-            audio: audio ? `${domainUrl}/${audio}.mp3` : null,
+            audio: audio ? `${domainUrl}/${audio}` : null,
             isAffectedByTime: isAffectedByTime,
             loopAudio
         };
@@ -15,7 +15,7 @@ export class Scene {
         return {
             type: "scene",
             video: `${domainUrl}/${url}`,
-            audio: audio ? `${domainUrl}/${audio}.mp3` : null,
+            audio: audio ? `${domainUrl}/${audio}` : null,
             loopScene,
             loopAudio
         };
@@ -45,8 +45,8 @@ export class Character {
 }
 
 export class Dialogue {
-    static Say(name, text, audio) {
-        return { type: "say", name, text, audio: audio ? `${domainUrl}/${audio}.mp3` : null };
+    static Say(name, text, audio, isFemale = false) {
+        return { type: "say", name, text, audio: audio ? `${domainUrl}/${audio}` : null, isFemale };
     }
 
     static Narrate(text, audio = null) {
@@ -61,16 +61,21 @@ export class Flow {
     /**
     * @param {string} text
     * @param {Array} action
-    * @param {{ icon?: string, typeMenu?: string, position?: { xpos: number, ypos: number} }} [config] 
+    * @param {{ icon?: string, typeMenu?: string, position?: { xpos: number, ypos: number, heightPercent?: number, widthPercent?: number} }} [config] 
     * @returns {any}
     */
     static Action(text, action, config) {
+        if (config?.position?.heightPercent) {
+            console.log(config);            
+        }
         return {
             text, action,
             icon: config?.icon ? `./Media/${config?.icon}` : undefined,
             typeMenu: config?.typeMenu,
             xpos: config?.position?.xpos,
-            ypos: config?.position?.ypos
+            ypos: config?.position?.ypos,
+            heightPercent: config?.position?.heightPercent,
+            widthPercent: config?.position?.widthPercent,
         };
     }
 
@@ -118,35 +123,30 @@ export class Flow {
     static Time(hourOperator, hourValue) {
         return { type: "time", operator: hourOperator, value: hourValue };
     }
+    static PlayAudio(audio, loopAudio = true) {
+        return {
+            type: "audio",
+            audio: audio ? `${domainUrl}/${audio}` : null,
+            loopAudio
+        };
+    }
 }
 const mapBack = Flow.Action("", [Flow.Jump('MainMap')], { typeMenu: "TAB", icon: "Icons/map" });
 
 export class MapScene {
-    static Go(MapName, Options, OptionalsMenus = [], audio, isAffectedByTime) {
+    static Go(MapName, Options, OptionalsMenus = [], audio, isAffectedByTime = false, aditionalBlocks = []) {
         //Options?.forEach();
         return [
-            Scene.Show(MapName, audio, true, isAffectedByTime),
+            Scene.Show(MapName, undefined, true, isAffectedByTime),
             ...OptionalsMenus,
-            Flow.Choice([mapBack, ...Options])
+            Flow.Choice([mapBack, ...Options]),
+            ...aditionalBlocks,
+            audio
         ]
     }
 }
 
 const roomBack = Flow.Action("", [Flow.Jump('MainMap')], { typeMenu: "TAB", icon: "Icons/map" });
-
-
-export const MainMenu = Flow.Menu([
-    Flow.Action("Guardar", [
-        () => saveSystem.showSaveLoadScreen(false)
-    ], { icon: "Icons/icon_save" }),
-    Flow.Action("Cargar", [
-        () => saveSystem.showSaveLoadScreen(true)
-    ], { icon: "Icons/icon_download" }),
-    Flow.Action("", [
-        () => vnEngine.TimeSystem.autoAdvanceTime(4)
-    ], { icon: "Icons/time_skip" }),
-    Flow.Action("Opciones", [Scene.Show("menu_options")], { icon: "Icons/icon_patchnote" })
-], { typeMenu: "FLOATING" });
 
 export class RoomScene {
     static Go(RoomName, Commands, Options, audio, isAffectedByTime) {
@@ -156,7 +156,6 @@ export class RoomScene {
             }
         });
         return [
-            MainMenu,
             Scene.Show(RoomName, audio, true, isAffectedByTime),
             ...Commands,
             Flow.Choice([roomBack, ...Options])
@@ -165,12 +164,21 @@ export class RoomScene {
 }
 
 export class CharacterModel {
-    Name = "name";
-    State = {        
-        Normal: "avatar"
+    constructor() {
+        // @ts-ignore
+        this.Name = this.__proto__.constructor.name.replace("Model", "");
+        this.State = {
+            Ungry: `Scene/${this.Name}/Normal`,
+            Fear: `Scene/${this.Name}/Normal`,
+            Happy: `Scene/${this.Name}/Normal`,
+            Normal: `Scene/${this.Name}/Normal`
+        }
+
     }
-    Say(text) {
-        return Dialogue.Say(this.Name, text);
+
+    isFemale = false
+    Say(text, audio) {
+        return Dialogue.Say(this.Name, text, audio, this.isFemale);
     }
     GetVar(name) {
         return vnEngine.variables[name] ?? this[name]
@@ -186,7 +194,7 @@ export class CharacterModel {
         return this.Show(state, "left");
     }
     Hide() {
-        return Character.Show(this.Name);
+        return Character.Hide(this.Name);
     }
 
 }

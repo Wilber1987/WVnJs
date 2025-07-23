@@ -95,7 +95,7 @@ export class SaveSystem {
 
     // Restablecer el bloque actual
     if (state.currentBlock && state.commandIndex !== undefined) {
-      engine.scenes[engine.currentScene] = state.currentBlock;
+      //engine.scenes[engine.currentScene] = state.currentBlock;
       engine.currentCommandIndex = state.commandIndex;
     } else {
       engine.currentCommandIndex = 0;
@@ -119,7 +119,7 @@ export class SaveSystem {
     }));
 
     // Mostrar como menú flotante NO BLOQUEANTE
-    return Flow.Choice(options, { typeMenu: "FLOATING" });
+    return Flow.Choice(options);
   }
 
 
@@ -154,6 +154,7 @@ export class SaveSystem {
   showSaveLoadScreen(isLoadMode = true) {
     const screen = document.getElementById('save-load-screen');
     const grid = document.getElementById('save-load-grid');
+    // @ts-ignore
     grid.innerHTML = '';
 
     for (let i = 1; i <= 8; i++) {
@@ -171,6 +172,7 @@ export class SaveSystem {
         } else {
           div.addEventListener('click', () => {
             this.loadFromSlot(slotName);
+            // @ts-ignore
             screen.style.display = 'none';
           });
         }
@@ -182,10 +184,12 @@ export class SaveSystem {
 
         div.addEventListener('click', () => {
           this.saveToSlot(slotName);
+          // @ts-ignore
           screen.style.display = 'none';
         });
       }
 
+      // @ts-ignore
       grid.appendChild(div);
 
     }
@@ -193,9 +197,12 @@ export class SaveSystem {
     divReturn.className = 'save-slot';
     divReturn.textContent = `Return`;
     divReturn.addEventListener('click', () => {
+      // @ts-ignore
       screen.style.display = 'none';
     });
+    // @ts-ignore
     grid.appendChild(divReturn)
+    // @ts-ignore
     screen.style.display = 'flex';
   }
 }
