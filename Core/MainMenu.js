@@ -15,6 +15,10 @@ export const MainMenu = Flow.Menu([
         () => vnEngine.TimeSystem.autoAdvanceTime(4)
     ], { icon: "Icons/time_skip" }),
 
+    Flow.Action("Personajes", [
+        () => vnEngine.CharacterView()
+    ], { icon: "Icons/time_skip" }),
+
     Flow.Action("Opciones", [Scene.Show("menu_options")], { icon: "Icons/icon_patchnote" }),
     Flow.Action("Salir al Menú", [Flow.Jump("start")], { icon: "Icons/icon_mainmenu" })
 ], { typeMenu: "FLOATING" });

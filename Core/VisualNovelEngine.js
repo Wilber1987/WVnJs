@@ -1,11 +1,26 @@
 //@ts-check
 import { SaveSystem } from "./SaveSystem.js";
 import { TimeSystem } from './TimeSystem.js';
+import { CharacterModel } from "./VisualNovelModules.js";
 
 
 export class VisualNovelEngine {
+  //console.log("test", Vars);
+  CharacterView() {
+      
+  }
+  /**
+   * @param {CharacterModel} character
+   */
+  RegisterCharacter(character) {
+    console.log(character);    
+    this.Characters.push(character)
+  }
+  /**
+  * @returns {TimeSystem}
+  */
   GetCurrenTime() {
-    return this.TimeSystem.currentTime
+    return this.TimeSystem
   }
   SetProps(Vars = {}) {
     for (const key in this.variables) {
@@ -21,6 +36,13 @@ export class VisualNovelEngine {
     this.scenes = {};
     this.currentScene = null;
     this.currentSceneImage = null;
+    /**
+     * @type {CharacterModel[]}
+     */
+    this.Characters = [];
+    /**
+     * @type {any[]}
+     */
     this.history = [];
     this.variables = {};
     this.activeCharacters = new Set(); // Track active characters
@@ -35,7 +57,8 @@ export class VisualNovelEngine {
       choicesContainerMenu: this.getUiElement('choices-container-menu'),
       choicesContainerFullScreen: this.getUiElement('choices-container-fullscreen'),
       background: this.getUiElement('background'),
-      characterSprites: this.getUiElement('character-sprites')
+      characterSprites: this.getUiElement('character-sprites'),
+      characterView: this.getUiElement('character-view-container'),
     };
     this.TimeSystem = new TimeSystem(this);
     this.activeAudioInstances = [];
@@ -57,6 +80,9 @@ export class VisualNovelEngine {
     return uiElement;
   }
 
+  /**
+   * @param {{ options: any; }} command
+   */
   setglobalMenu(command) {
     this.showChoices(command.options, true, this.currentScene);
   }
@@ -119,11 +145,19 @@ export class VisualNovelEngine {
   }
 
   // Definir una escena
+  /**
+   * @param {string | number} sceneName
+   * @param {any} sceneData
+   */
   defineScene(sceneName, sceneData) {
     this.scenes[sceneName] = sceneData;
   }
 
   // Iniciar una escena
+  /**
+   * @param {string | number} sceneName
+   * @param {number | undefined} [inBlock]
+   */
   startScene(sceneName, inBlock) {
     this.jumpTriggered = true;
     // Limpiar variables temporales
@@ -178,6 +212,21 @@ export class VisualNovelEngine {
 
   }
 
+
+  async processFunctionComand(command) {
+    let commandResult;
+    if (typeof command === 'function') {
+      commandResult = await command();
+      if (typeof commandResult === 'function') {
+        return await this.processFunctionComand(commandResult)
+      } else {
+        command = commandResult
+        //console.log(command);
+      }
+    }
+    return command;
+  }
+
   // Procesar un comando individual
   async processCommand(commandValue, sceneName) {
     if (this.jumpTriggered) return;
@@ -191,18 +240,17 @@ export class VisualNovelEngine {
       }
     }
     this.TimeSystem.updateTimeUI();
-    let commandResult;
-    if (typeof command === 'function') {
-      commandResult = await command();
-      if (!commandResult) {
-        return;
-      } else {
-        command = commandResult
-        //console.log(command);
-      }
+
+    command = await this.processFunctionComand(command);
+    if (!command) {
+      return;
     }
+
     if (!command || !command.type) return;
     switch (command.type) {
+      case 'block':
+        await this.executeBlock(command.commands, sceneName)
+        break;
       case 'say':
         await this.showText(command.name, command.text, command.audio, command.isFemale);
         //await this.waitForClick();
@@ -232,6 +280,7 @@ export class VisualNovelEngine {
       case 'jump':
         this.clearMenus();
         this.startScene(command.target);
+        this.quickSave();
         return false; // Exit current execution
 
       case 'choice':
@@ -240,6 +289,8 @@ export class VisualNovelEngine {
 
       case 'set':
         this.variables[command.var] = command.value;
+        console.log(command.var, this.variables[command.var]);
+
         break;
 
       case 'if':
@@ -511,7 +562,7 @@ export class VisualNovelEngine {
 
     this.hideAllCharacter()
 
-    const currentBg = this.uiElements.background?.querySelector('.background-image:not(.fade-out)');
+    const currentBg = this.uiElements.background?.querySelector('.background-image');
     const newBgContainer = document.createElement('div');
     newBgContainer.className = 'background-image';
     newBgContainer.style.position = 'absolute';
@@ -566,6 +617,15 @@ export class VisualNovelEngine {
         mediaElement.style.width = '100%';
         mediaElement.style.height = '100%';
         mediaElement.style.objectFit = 'cover';
+
+        if (mediaElement.loop) {
+          mediaElement.addEventListener("timeupdate", () => {
+            if (mediaElement.duration - mediaElement.currentTime < 0.1) {
+              mediaElement.currentTime = 0;
+              mediaElement.play();
+            }
+          });
+        }
 
         newBgContainer.appendChild(mediaElement);
 
@@ -628,12 +688,12 @@ export class VisualNovelEngine {
     void newBgContainer.offsetWidth;
 
     // Eliminar fondo anterior
-    if (currentBg) {
-      currentBg.classList.add('fade-out');
-      setTimeout(() => {
-        currentBg.remove();
-      }, 200);
-    }
+
+    currentBg?.classList.add('fade-out');
+    setTimeout(() => {
+      currentBg?.remove();
+    }, 200);
+
 
     // Activar opacidad
     newBgContainer.style.opacity = '1';
@@ -679,8 +739,8 @@ export class VisualNovelEngine {
 
   async showChoices(options, isGlobal = false, sceneName) {
     this.uiElements.textContainer.style.opacity = "0";
-    const validOptions = options.filter((/** @type {{ condition: any; }} */ option) =>
-      !option.condition || this.evaluateCondition(option.condition)
+    const validOptions = options.filter((/** @type {{ render: any; }} */ option) =>
+      !option.render || this.evaluateCondition(option.render)
     );
 
     if (validOptions.length === 0) return;
@@ -759,30 +819,24 @@ export class VisualNovelEngine {
       positionedWrapper.className = 'menu-wrapper menu-positioned-container';
       // 4. Opciones posicionadas manualmente
       for (const option of positionedOptions) {
-        const button = await this.createChoiceButton(option, positionedWrapper, sceneName);
+        const button = await this.createChoiceButton(option, undefined, sceneName);
         button.style.position = 'absolute';
         //button.style.left = `${(this.uiElements.background.offsetWidth * (option.xpos / 100))}px`;
         //button.style.top = `${(this.uiElements.background.offsetHeight * (option.ypos / 100))}px`; heightPercent, widthPercent
         button.style.left = `${option.xpos}%`;
         button.style.bottom = `${option.ypos}%`;
-        console.log("test", option);
         if (option.heightPercent || option.widthPercent) {
-          console.log(option);
-
           button.style.height = option.heightPercent ? `${option.heightPercent}%` : "auto";
           button.style.width = option.widthPercent ? `${option.widthPercent}%` : "auto";
           button.style.background = "none"
+          button.classList.add("btnlayout")
         }
-
         positionedWrapper.appendChild(button);
       }
-
-
       if (!isGlobal) {
         this.uiElements.choicesContainerFullScreen?.appendChild(positionedWrapper);
         this.uiElements.choicesContainerFullScreen.style.display = "flex";
-        this.uiElements.choicesContainerFullScreen.style.opacity = "1"
-
+        this.uiElements.choicesContainerFullScreen.style.opacity = "1";
       } else {
         this.uiElements.gloablMenuContainer?.appendChild(positionedWrapper);
       }
@@ -838,8 +892,6 @@ export class VisualNovelEngine {
     this.uiElements.choicesContainerFullScreen.style.opacity = "0"
     this.uiElements.choicesContainer.style.opacity = "0"
     this.uiElements.choicesContainerMenu.style.opacity = "0";
-    //this.uiElements.textBox.innerHTML = "";
-    //this.uiElements.nameBox.innerHTML = "";
     this.uiElements.textContainer.style.opacity = "0";
   }
 
@@ -858,7 +910,9 @@ export class VisualNovelEngine {
     } else {
       button.className = 'choice-button';
     }
-    button.textContent = option.text;
+    const label = document.createElement("label");
+    label.innerText = option.text;
+    button.appendChild(label);
     // Agregar icono si existe
     if (option.icon) {
 
@@ -933,8 +987,8 @@ export class VisualNovelEngine {
   // Evaluar condición mejorada
   evaluateCondition(condition) {
     if (!condition) return true;
-    ////console.log("ev:", condition);
-    //console.log("result:", condition.var, this.variables[condition.var], this.variables[condition.var] == condition.value);
+    console.log("ev:", condition);
+    console.log("result:", condition.var, this.variables[condition.var], this.variables[condition.var] == condition.value);
     if (!this.variables[condition.var]) {
       this.variables[condition.var] = 0;
     }
@@ -975,11 +1029,11 @@ export class VisualNovelEngine {
   }
 
   //GUARDADO 
-  quickSave(slot = 'slot1') {
+  quickSave(slot = 'slot0') {
     saveSystem.saveToSlot(slot);
   }
 
-  quickLoad(slot = 'slot1') {
+  quickLoad(slot = 'slot0') {
     saveSystem.loadFromSlot(slot);
   }
 }

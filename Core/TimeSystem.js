@@ -1,11 +1,20 @@
 import { VisualNovelEngine } from "./VisualNovelEngine.js";
-
+/**
+ * Representa el estado actual del tiempo en la novela visual.
+ * @typedef {Object} CurrentTime
+ * @property {number} hour - Hora del día (0-23)
+ * @property {number} day - Número de día desde el inicio (1 = día 1)
+ * @property {string} weekDay - Nombre del día de la semana
+ * @property {'Monday'|'Tuesday'|'Wednesday'|'Thursday'|'Friday'|'Saturday'|'Sunday'} weekDay - Día de la semana (valores permitidos)
+ * @property {'Spring'|'Summer'|'Autumn'|'Winter'} season - Estación actual
+ */
 export class TimeSystem {
   /**
   * @param {VisualNovelEngine} vnEngine 
   */
   constructor(vnEngine) {
     this.vnEngine = vnEngine;
+    /** @type {CurrentTime}*/
     this.currentTime = vnEngine.TimeSystem?.getCurrentTime() ?? {
       hour: 8,   // 8 AM por defecto
       day: 1,    // Día 1
@@ -17,6 +26,25 @@ export class TimeSystem {
     this.weekDays = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
     this.seasons = ['Spring', 'Summer', 'Autumn', 'Winter'];
   }
+
+  // === Días de la semana ===
+  isMonday() { return this.currentTime.weekDay === 'Monday'; }
+  isTuesday() { return this.currentTime.weekDay === 'Tuesday'; }
+  isWednesday() { return this.currentTime.weekDay === 'Wednesday'; }
+  isThursday() { return this.currentTime.weekDay === 'Thursday'; }
+  isFriday() { return this.currentTime.weekDay === 'Friday'; }
+  isSaturday() { return this.currentTime.weekDay === 'Saturday'; }
+  isSunday() { return this.currentTime.weekDay === 'Sunday'; }
+
+  // === Estaciones del año ===
+  isSpring() { return this.currentTime.season === 'Spring'; }
+  isSummer() { return this.currentTime.season === 'Summer'; }
+  isAutumn() { return this.currentTime.season === 'Autumn'; }
+  isWinter() { return this.currentTime.season === 'Winter'; }
+
+  // Opcional: métodos más genéricos
+  isWeekend() { return this.isSaturday() || this.isSunday(); }
+  isWeekday() { return !this.isWeekend(); }
   /**
    * Avanza el tiempo en X horas
    * @param {number} hoursToAdd
@@ -36,6 +64,11 @@ export class TimeSystem {
     this.vnEngine.clearMenus();
     this.vnEngine.startScene(this.vnEngine.currentScene);
   }
+
+  get hour() { return this.currentTime.hour; }
+  get day() { return this.currentTime.day; }
+  get weekDay() { return this.currentTime.weekDay; }
+  get season() { return this.currentTime.season; }
 
   /**
    * Devuelve la hora actual en formato AM/PM

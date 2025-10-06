@@ -61,12 +61,12 @@ export class Flow {
     /**
     * @param {string} text
     * @param {Array} action
-    * @param {{ icon?: string, typeMenu?: string, position?: { xpos: number, ypos: number, heightPercent?: number, widthPercent?: number} }} [config] 
+    * @param {{ icon?: string, typeMenu?: string, render?: { type: string, var: string, operator: string , value: any }, position?: { xpos: number, ypos: number, heightPercent?: number, widthPercent?: number} }} [config] 
     * @returns {any}
     */
     static Action(text, action, config) {
         if (config?.position?.heightPercent) {
-            console.log(config);            
+            console.log(config);
         }
         return {
             text, action,
@@ -76,7 +76,12 @@ export class Flow {
             ypos: config?.position?.ypos,
             heightPercent: config?.position?.heightPercent,
             widthPercent: config?.position?.widthPercent,
+            render: config?.render
         };
+    }
+
+    static Block(commands) {
+        return { type: "block", commands: commands };
     }
 
     static Choice(options) {
@@ -96,6 +101,12 @@ export class Flow {
     }
 
     // Operadores para condiciones
+    /**
+     * @param {string} name
+     * @param {string | undefined} [operator]
+     * @param {number | boolean | undefined} [value]
+      *  @returns {{ type: String, var: String, operator: String, value: any } }
+     */
     static Var(name, operator, value) {
         return { type: "variable", var: name, operator, value };
     }
@@ -167,29 +178,56 @@ export class CharacterModel {
     constructor() {
         // @ts-ignore
         this.Name = this.__proto__.constructor.name.replace("Model", "");
-        this.State = {
+        //esta propiedad refleja la ruta imagen que debe usar segun cada estado
+        this.Sprites = {
             Ungry: `Scene/${this.Name}/Normal`,
             Fear: `Scene/${this.Name}/Normal`,
             Happy: `Scene/${this.Name}/Normal`,
             Normal: `Scene/${this.Name}/Normal`
         }
-
+        //estadisticas del persaonaje
+        this.Stats = {
+            Spd: 1,
+            Str: 1
+        }
+        vnEngine.RegisterCharacter(this);
     }
 
     isFemale = false
-    Say(text, audio) {
+    /**
+     * @param {any} text
+     * @param {any|undefined} audio
+     */
+    Say(text, audio = undefined) {
         return Dialogue.Say(this.Name, text, audio, this.isFemale);
     }
+    /**
+     * @param {string | number} name
+     */
     GetVar(name) {
-        return vnEngine.variables[name] ?? this[name]
+        this.Stats[name] = vnEngine.variables[name] ?? this[name];
+        return  this.Stats[name];
+    }
+    /**
+     * @param {string | number} name
+    * @param {any} value
+     */
+    SetVar(name, value) {
+        return Flow.Set(this.Name + name, value);
     }
 
     Show(state = "Normal", position = "center") {
-        return Character.Show(this.Name, this.State[state] ?? this.State["Normal"], position)
+        return Character.Show(this.Name, this.Sprites[state] ?? this.Sprites["Normal"], position)
     }
+    /**
+     * @param {string | undefined} state
+     */
     ShowR(state) {
         return this.Show(state, "right");
     }
+    /**
+     * @param {string | undefined} state
+     */
     ShowL(state) {
         return this.Show(state, "left");
     }

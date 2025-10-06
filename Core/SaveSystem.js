@@ -74,7 +74,7 @@ export class SaveSystem {
       currentScene: engine.currentScene,
       activeCharacters: Array.from(engine.activeCharacters),
       timeState: engine.TimeSystem.getCurrentTime(),
-
+      lastBackground: engine.uiElements.background.innerHTML,
       // Nuevo: información del bloque actual
       currentBlock: [...engine.scenes[engine.currentScene]], // Bloque completo
       commandIndex: engine.currentCommandIndex ?? 0         // Índice actual (nuevo)
@@ -139,6 +139,7 @@ export class SaveSystem {
   async loadFromSlot(slot) {
     this.vnEngine.clearMenus();
     const savedState = this.loadState(slot);
+    this.vnEngine.uiElements.background.innerHTML = savedState.lastBackground
     if (savedState) {
       this.restoreGameState(this.vnEngine, savedState);
       await this.vnEngine.startScene(savedState.currentScene, this.vnEngine.currentCommandIndex);
